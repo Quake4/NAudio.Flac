@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Drawing;
+//using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -147,22 +147,22 @@ namespace NAudio.Flac
 
         public const string MimeURL = "-->";
 
-        public static System.Drawing.Image DecodeImage(byte[] rawdata, string mimetype)
-        {
-            Stream stream;
-            if (mimetype.Trim() == MimeURL)
-            {
-                WebClient client = new WebClient();
-                var data = client.DownloadData(GetURL(rawdata, mimetype));
-                stream = new MemoryStream(data);
-            }
-            else
-            {
-                stream = new MemoryStream(rawdata, false);
-            }
+        //public static System.Drawing.Image DecodeImage(byte[] rawdata, string mimetype)
+        //{
+        //    Stream stream;
+        //    if (mimetype.Trim() == MimeURL)
+        //    {
+        //        WebClient client = new WebClient();
+        //        var data = client.DownloadData(GetURL(rawdata, mimetype));
+        //        stream = new MemoryStream(data);
+        //    }
+        //    else
+        //    {
+        //        stream = new MemoryStream(rawdata, false);
+        //    }
 
-            return Image.FromStream(stream);
-        }
+        //    return Image.FromStream(stream);
+        //}
 
         public static string GetURL(byte[] RawData, string MimeType)
         {

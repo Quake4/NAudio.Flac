@@ -1,6 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Drawing;
+//using System.Drawing;
 
 namespace NAudio.Flac
 {
@@ -14,22 +14,22 @@ namespace NAudio.Flac
 
         internal byte[] RawData { get; private set; }
 
-        private Image _image;
+        //private Image _image;
 
         /// <summary>
         /// WARNING: If MimeType equals "-->" the picture will be downloaded from the web.
         /// Use GetURL() the get the url to the picture. If not, data, contained by the frame will
         /// be used.
         /// </summary>
-        public Image Image
-        {
-            get { return _image ?? (_image = DecodeImage()); }
-        }
+        //public Image Image
+        //{
+        //    get { return _image ?? (_image = DecodeImage()); }
+        //}
 
-        private Image DecodeImage()
-        {
-            return ID3Utils.DecodeImage(RawData, MimeType);
-        }
+        //private Image DecodeImage()
+        //{
+        //    return ID3Utils.DecodeImage(RawData, MimeType);
+        //}
 
         private ID3Version _version;
 
