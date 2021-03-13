@@ -212,6 +212,7 @@ namespace NAudio.Flac
             {
                 fixed (int* ptrDestBuffer = _destBuffer, ptrResidualBuffer = _residualBuffer)
                 {
+                    FreeBuffers();
                     _handle1 = GCHandle.Alloc(_destBuffer, GCHandleType.Pinned);
                     _handle2 = GCHandle.Alloc(_residualBuffer, GCHandleType.Pinned);
 
