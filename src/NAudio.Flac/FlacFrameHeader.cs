@@ -314,6 +314,9 @@ namespace NAudio.Flac
                 }
 
                 headerBuffer += reader.Position;
+
+                reader.Dispose();
+
                 return true;
             }
 

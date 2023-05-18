@@ -29,6 +29,8 @@ namespace NAudio.Flac
                 //    lastBlock = true;
                 //type = (FlacMetaDataType)(b[0] & 0x7F);
                 //int length = (b[1] + (b[2] << 8) + (b[3] << 16));
+
+                bitReader.Dispose();
             }
 
             FlacMetadata data;

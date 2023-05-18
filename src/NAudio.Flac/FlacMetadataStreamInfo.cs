@@ -35,6 +35,7 @@ namespace NAudio.Flac
                 BitsPerSample = 1 + (int)bitreader.ReadBits(5);
                 TotalSamples = (long)bitreader.ReadBits64(36);
                 MD5 = new String(reader.ReadChars(16));
+                bitreader.Dispose();
             }
         }
 

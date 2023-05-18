@@ -109,6 +109,7 @@ namespace NAudio.Flac
                 SamplesToBytes(_data);
 
                 //return reader.Position;
+                reader.Dispose();
             }
         }
 
