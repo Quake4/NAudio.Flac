@@ -77,11 +77,7 @@ namespace NAudio.Flac
             var data = AllocOuputMemory();
             _data = data;
 
-            byte[] buffer = new byte[0x20000];
-            if ((_streamInfo.MaxFrameSize * Header.Channels * Header.BitsPerSample * 2 >> 3) > buffer.Length)
-            {
-                buffer = new byte[(_streamInfo.MaxFrameSize * Header.Channels * Header.BitsPerSample * 2 >> 3) - FlacConstant.FrameHeaderSize];
-            }
+            byte[] buffer = new byte[(_streamInfo.MaxFrameSize * Header.Channels * Header.BitsPerSample * 2 >> 3)];
 
             int read = _stream.Read(buffer, 0, (int)Math.Min(buffer.Length, _stream.Length - _stream.Position));
 
