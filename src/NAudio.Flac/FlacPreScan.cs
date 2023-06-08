@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace NAudio.Flac
 {
-    internal sealed class FlacPreScan
+    public sealed class FlacPreScan
     {
         private const int BufferSize = 524288;
         private readonly Stream _stream;
@@ -120,7 +120,7 @@ namespace NAudio.Flac
                     //for (int i = 0; i < read - FlacConstant.FrameHeaderSize; i++)
                     while ((bufferPtr + read - FlacConstant.FrameHeaderSize) > ptr)
                     {
-                        if ((*ptr++ & 0xFF) == 0xFF && (*ptr & 0xF8) == 0xF8) //check sync
+                        if (*ptr++ == 0xFF && (*ptr & 0xFE) == 0xF8) //check sync
                         {
                             byte* ptrSafe = ptr;
                             ptr--;
@@ -141,6 +141,7 @@ namespace NAudio.Flac
                                     frames.Add(frameInfo);
 
                                     frameInfo.SampleOffset += header.BlockSize;
+                                    ptr += header.BlockSize;
                                 }
                                 else
                                 {

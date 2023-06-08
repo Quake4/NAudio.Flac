@@ -210,7 +210,7 @@ namespace NAudio.Flac
                         return false;
                     }
                 }
-                else if (x == 3 || x >= 7 || x < 0)
+                else if (x == 3 || x >= FlacConstant.BitPerSampleTable.Length || x < 0)
                 {
                     Error("Invalid BitsPerSampleIndex", loggerLocation);
                     return false;
