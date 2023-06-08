@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 
 namespace NAudio.Flac
@@ -98,9 +99,12 @@ namespace NAudio.Flac
 
             byte[] buffer = new byte[BufferSize];
             int read = 0;
-            stream.Position = 4; //fLaC
 
-            FlacMetadata.ReadAllMetadataFromStream(stream);
+            if (stream.Position <= 4)
+            {
+                stream.Position = 4; //fLaC
+                FlacMetadata.ReadAllMetadataFromStream(stream);
+            }
 
             List<FlacFrameInformation> frames = new List<FlacFrameInformation>();
             FlacFrameInformation frameInfo = new FlacFrameInformation();
@@ -138,10 +142,22 @@ namespace NAudio.Flac
                                 {
                                     frameInfo.StreamOffset = stream.Position - read + ((ptrSafe - 1) - bufferPtr);
                                     frameInfo.Header = header;
+
+                                    if (frames.Count > 0)
+                                    {
+                                        var last = frames.Last();
+                                        if (last.Header.FrameNumber + 1 != header.FrameNumber)
+                                        {
+                                            Debug.WriteLineIf(last.Header.FrameNumber + 1 != header.FrameNumber, $"Sequence missmatch: previous {last.Header.FrameNumber}, current {header.FrameNumber}");
+                                            ptr = ptrSafe;
+                                            continue;
+                                        }
+                                    }
+
                                     frames.Add(frameInfo);
 
                                     frameInfo.SampleOffset += header.BlockSize;
-                                    ptr += header.BlockSize;
+                                    ptr += streamInfo.MinFrameSize > 8 ? (streamInfo.MinFrameSize - 8) : 0; // 8 is minimum header size
                                 }
                                 else
                                 {

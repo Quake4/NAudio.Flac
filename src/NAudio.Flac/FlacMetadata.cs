@@ -14,7 +14,7 @@ namespace NAudio.Flac
             int length = 0;
 
             byte[] b = new byte[4];
-            if (stream.Read(b, 0, 4) <= 0)
+            if (stream.Read(b, 0, b.Length) != b.Length)
                 throw new FlacException(new EndOfStreamException("Could not read metadata"), FlacLayer.Metadata);
 
             fixed (byte* headerBytes = b)
