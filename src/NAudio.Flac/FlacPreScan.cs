@@ -157,7 +157,7 @@ namespace NAudio.Flac
                                     frames.Add(frameInfo);
 
                                     frameInfo.SampleOffset += header.BlockSize;
-                                    ptr += streamInfo.MinFrameSize > 8 ? (streamInfo.MinFrameSize - 8) : 0; // 8 is minimum header size
+                                    ptr = (ptrSafe - 1) + streamInfo.MinFrameSize;
                                 }
                                 else
                                 {
