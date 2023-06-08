@@ -100,7 +100,7 @@ namespace NAudio.Flac
             byte[] buffer = new byte[BufferSize];
             int read = 0;
 
-            if (stream.Position <= 4)
+            if (stream.Position <= (4 + streamInfo.Length))
             {
                 stream.Position = 4; //fLaC
                 FlacMetadata.ReadAllMetadataFromStream(stream);
@@ -157,7 +157,11 @@ namespace NAudio.Flac
                                     frames.Add(frameInfo);
 
                                     frameInfo.SampleOffset += header.BlockSize;
-                                    ptr = (ptrSafe - 1) + streamInfo.MinFrameSize;
+                                    var newPtr = (ptrSafe - 1) + streamInfo.MinFrameSize;
+                                    if (bufferPtr + read <= newPtr)
+                                        ptr = bufferPtr + read - 1;
+                                    else
+                                        ptr = newPtr;
                                 }
                                 else
                                 {
