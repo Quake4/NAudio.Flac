@@ -44,8 +44,8 @@ namespace NAudio.Flac
             TotalLength = totalLength;
             TotalSamples = totalsamples;
 
-			if (TotalSamples != streamInfo.TotalSamples)
-				throw new Exception($"Scan failed. Total samples isn't equal in streaminfo and scaned.");
+            if (TotalSamples != streamInfo.TotalSamples)
+                throw new Exception($"Scan failed. Total samples isn't equal in streaminfo and scaned.");
         }
 
         private void StartScan(FlacMetadataStreamInfo streamInfo, FlacPreScanMethodMode method)
