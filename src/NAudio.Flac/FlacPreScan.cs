@@ -40,13 +40,13 @@ namespace NAudio.Flac
             {
                 var stream = File.OpenRead((_stream as FileStream).Name);
                 stream.Position = _stream.Position;
-				ScanStream(streamInfo, stream, token);
+                ScanStream(streamInfo, stream, token);
                 stream.Dispose();
             }
             else
             {
                 long saveOffset = _stream.Position;
-				ScanStream(streamInfo, _stream, token);
+                ScanStream(streamInfo, _stream, token);
                 _stream.Position = saveOffset;
             }
             _isRunning = false;
