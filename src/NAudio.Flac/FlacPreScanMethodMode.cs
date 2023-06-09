@@ -11,11 +11,6 @@
         None,
 
         /// <summary>
-        /// Default value.
-        /// </summary>
-        Default,
-
-        /// <summary>
         /// Scan synchronously.
         /// </summary>
         Sync,
@@ -24,6 +19,11 @@
         /// Scan async BUT don't use the stream while scan is running because the stream position
         /// will change while scanning. If you playback the stream, it will cause an error!
         /// </summary>
-        Async
-    }
+        Async,
+
+        /// <summary>
+        /// Default value.
+        /// </summary>
+        Default = Sync,
+	}
 }

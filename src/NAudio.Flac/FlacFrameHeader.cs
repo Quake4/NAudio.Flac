@@ -60,6 +60,8 @@ namespace NAudio.Flac
             byte[] headerBuffer = new byte[FlacConstant.FrameHeaderSize];
 
             HasError = !ParseHeader(stream, ref headerBuffer, streamInfo);
+            if (HasError)
+                stream.Position = StreamPosition;
         }
 
         public unsafe FlacFrameHeader(ref byte* buffer, FlacMetadataStreamInfo streamInfo, bool doCrc)

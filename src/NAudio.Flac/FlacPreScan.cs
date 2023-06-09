@@ -29,26 +29,7 @@ namespace NAudio.Flac
             _stream = stream;
         }
 
-        public void ScanStream(FlacMetadataStreamInfo streamInfo, FlacPreScanMethodMode mode)
-        {
-            long saveOffset = _stream.Position;
-            StartScan(streamInfo, mode);
-            _stream.Position = saveOffset;
-
-            long totalLength = 0, totalsamples = 0;
-            foreach (var frame in Frames)
-            {
-                totalLength += frame.Header.BlockSize * frame.Header.BitsPerSample * frame.Header.Channels;
-                totalsamples += frame.Header.BlockSize;
-            }
-            TotalLength = totalLength;
-            TotalSamples = totalsamples;
-
-            if (TotalSamples != streamInfo.TotalSamples)
-                throw new Exception($"Scan failed. Total samples isn't equal in streaminfo and scaned.");
-        }
-
-        private void StartScan(FlacMetadataStreamInfo streamInfo, FlacPreScanMethodMode method)
+        public FlacPreScan StartScan(FlacMetadataStreamInfo streamInfo, FlacPreScanMethodMode method, CancellationToken token)
         {
             if (_isRunning)
                 throw new Exception("Scan is already running.");
@@ -57,31 +38,57 @@ namespace NAudio.Flac
 
             if (method == FlacPreScanMethodMode.Async)
             {
-                ThreadPool.QueueUserWorkItem(o =>
-                {
-                    Frames = RunScan(streamInfo);
-                    _isRunning = false;
-                });
+                var stream = File.OpenRead((_stream as FileStream).Name);
+                stream.Position = _stream.Position;
+				ScanStream(streamInfo, stream, token);
+                stream.Dispose();
             }
             else
             {
-                Frames = RunScan(streamInfo);
-                _isRunning = false;
+                long saveOffset = _stream.Position;
+				ScanStream(streamInfo, _stream, token);
+                _stream.Position = saveOffset;
             }
+            _isRunning = false;
+            return this;
         }
 
-        private List<FlacFrameInformation> RunScan(FlacMetadataStreamInfo streamInfo)
+        private void ScanStream(FlacMetadataStreamInfo streamInfo, Stream stream, CancellationToken token)
+        {
+            var frames = RunScan(streamInfo, stream, token);
+
+            if (token.IsCancellationRequested)
+                return;
+
+            long totalLength = 0, totalSamples = 0;
+            foreach (var frame in frames)
+            {
+                totalLength += frame.Header.BlockSize * frame.Header.BitsPerSample * frame.Header.Channels;
+                totalSamples += frame.Header.BlockSize;
+
+                if (token.IsCancellationRequested)
+                    return;
+            }
+
+            if (totalSamples != streamInfo.TotalSamples)
+                throw new Exception($"Scan failed. Total samples isn't equal in streaminfo and scaned.");
+
+            Frames = frames;
+            TotalLength = totalLength;
+            TotalSamples = totalSamples;
+        }
+
+        private List<FlacFrameInformation> RunScan(FlacMetadataStreamInfo streamInfo, Stream stream, CancellationToken token)
         {
 #if DEBUG
             Stopwatch watch = new Stopwatch();
             watch.Start();
 #endif
-            var result = ScanThisShit(streamInfo);
+            var result = ScanThisShit(streamInfo, stream, token);
 
 #if DEBUG
             watch.Stop();
-            Debug.WriteLine(String.Format("FlacPreScan finished: {0} Bytes processed in {1} ms.",
-                _stream.Length, watch.ElapsedMilliseconds));
+            Debug.WriteLine($"FlacPreScan {(token.IsCancellationRequested ? "cancelled" : "finished")}: {stream.Length} bytes processed in {watch.ElapsedMilliseconds} ms.");
 #endif
             RaiseScanFinished(result);
             return result;
@@ -93,10 +100,8 @@ namespace NAudio.Flac
                 ScanFinished(this, new FlacPreScanFinishedEventArgs(frames));
         }
 
-        private unsafe List<FlacFrameInformation> ScanThisShit(FlacMetadataStreamInfo streamInfo)
+        private unsafe List<FlacFrameInformation> ScanThisShit(FlacMetadataStreamInfo streamInfo, Stream stream, CancellationToken token)
         {
-            Stream stream = _stream;
-
             //if (!(stream is BufferedStream))
             //    stream = new BufferedStream(stream);
 
@@ -115,7 +120,7 @@ namespace NAudio.Flac
 
             FlacFrameHeader baseHeader = null;
 
-            while (true)
+            while (!token.IsCancellationRequested)
             {
                 read = stream.Read(buffer, 0, buffer.Length);
                 if (read <= FlacConstant.FrameHeaderSize)
@@ -125,7 +130,7 @@ namespace NAudio.Flac
                 {
                     byte* ptr = bufferPtr;
                     //for (int i = 0; i < read - FlacConstant.FrameHeaderSize; i++)
-                    while ((bufferPtr + read - FlacConstant.FrameHeaderSize) > ptr)
+                    while ((bufferPtr + read - FlacConstant.FrameHeaderSize) > ptr && !token.IsCancellationRequested)
                     {
                         if (*ptr++ == 0xFF && (*ptr & 0xFE) == 0xF8) //check sync
                         {
