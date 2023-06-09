@@ -36,21 +36,29 @@ namespace NAudio.Flac
 
             _isRunning = true;
 
-            if (method == FlacPreScanMethodMode.Async)
+            try
             {
-                var stream = File.OpenRead((_stream as FileStream).Name);
-                stream.Position = _stream.Position;
-                ScanStream(streamInfo, stream, token);
-                stream.Dispose();
+                if (method == FlacPreScanMethodMode.Async)
+                {
+                    var stream = File.OpenRead((_stream as FileStream).Name);
+                    stream.Position = _stream.Position;
+                    ScanStream(streamInfo, stream, token);
+                    stream.Dispose();
+                }
+                else
+                {
+                    long saveOffset = _stream.Position;
+                    ScanStream(streamInfo, _stream, token);
+                    _stream.Position = saveOffset;
+                }
+                return this;
             }
-            else
+            catch { }
+            finally
             {
-                long saveOffset = _stream.Position;
-                ScanStream(streamInfo, _stream, token);
-                _stream.Position = saveOffset;
+                _isRunning = false;
             }
-            _isRunning = false;
-            return this;
+            return null;
         }
 
         private void ScanStream(FlacMetadataStreamInfo streamInfo, Stream stream, CancellationToken token)
@@ -71,7 +79,7 @@ namespace NAudio.Flac
             }
 
             if (totalSamples != streamInfo.TotalSamples)
-                throw new Exception($"Scan failed. Total samples isn't equal in streaminfo and scaned.");
+                Debug.WriteLine($"FlacPreScan missmatch: total samples in streaminfo {streamInfo.TotalSamples} and scaned {totalSamples}.");
 
             Frames = frames;
             TotalLength = totalLength;
