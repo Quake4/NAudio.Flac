@@ -11,11 +11,9 @@
 
             unsafe
             {
+                int* ptr = data.DestBuffer;
                 for (int i = 0; i < header.BlockSize; i++)
-                {
-                    int* ptr = data.DestBuffer;
                     *ptr++ = Value;
-                }
             }
         }
     }

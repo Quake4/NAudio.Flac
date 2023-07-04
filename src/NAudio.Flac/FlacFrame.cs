@@ -142,8 +142,7 @@ namespace NAudio.Flac
 
         public unsafe int GetBuffer(ref byte[] buffer, int offset)
         {
-            //int desiredsize = Header.BlockSize * Header.Channels * Header.BitsPerSample;
-            int desiredsize = Header.BlockSize * Header.Channels * ((Header.BitsPerSample + 7) / 2);
+            int desiredsize = Header.BlockSize * Header.Channels * ((Header.BitsPerSample + 7) / 8); // align to bytes
             if (buffer == null || buffer.Length < desiredsize)
                 buffer = new byte[desiredsize];
 
