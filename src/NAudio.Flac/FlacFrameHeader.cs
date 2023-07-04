@@ -59,7 +59,7 @@ namespace NAudio.Flac
 
             byte[] headerBuffer = new byte[FlacConstant.FrameHeaderSize];
 
-            HasError = !ParseHeader(stream, ref headerBuffer, streamInfo);
+            HasError = !ParseHeader(stream, headerBuffer, streamInfo);
             if (HasError)
                 stream.Position = StreamPosition;
         }
@@ -79,7 +79,7 @@ namespace NAudio.Flac
             HasError = !ParseHeader(ref buffer, streamInfo);
         }
 
-        private unsafe bool ParseHeader(Stream stream, ref byte[] headerBuffer, FlacMetadataStreamInfo streamInfo)
+        private unsafe bool ParseHeader(Stream stream, byte[] headerBuffer, FlacMetadataStreamInfo streamInfo)
         {
             const string loggerLocation = "FlacFrameHeader.ParseHeader(Stream, FlacMetadataStreamInfo)";
 
