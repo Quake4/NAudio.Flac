@@ -45,13 +45,11 @@ namespace NAudio.Flac
                 {
                     k = (int)reader.ReadBits(5);
                     for (int i = n; i > 0; i--)
-                    {
-                        *(r) = reader.ReadBitsSigned((int)k);
-                    }
+                        *(r++) = k == 0 ? 0 : reader.ReadBitsSigned(k);
                 }
                 else
                 {
-                    ReadFlacRiceBlock(reader, n, (int)k, r);
+                    ReadFlacRiceBlock(reader, n, k, r);
                     r += n;
                 }
                 j += n;
@@ -64,7 +62,6 @@ namespace NAudio.Flac
         {
             fixed (byte* putable = FlacBitReader.UnaryTable)
             {
-                uint mask = (1u << riceParameter) - 1;
                 if (riceParameter == 0)
                 {
                     for (int i = 0; i < nvals; i++)
@@ -74,6 +71,7 @@ namespace NAudio.Flac
                 }
                 else
                 {
+                    uint mask = (1u << riceParameter) - 1;
                     for (int i = 0; i < nvals; i++)
                     {
                         uint bits = putable[reader.Cache >> 24];

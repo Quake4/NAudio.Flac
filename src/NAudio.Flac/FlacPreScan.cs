@@ -36,6 +36,8 @@ namespace NAudio.Flac
 
             _isRunning = true;
 
+            long saveOffset = _stream.Position;
+
             try
             {
                 if (method == FlacPreScanMethodMode.Async)
@@ -47,13 +49,17 @@ namespace NAudio.Flac
                 }
                 else
                 {
-                    long saveOffset = _stream.Position;
                     ScanStream(streamInfo, _stream, token);
                     _stream.Position = saveOffset;
                 }
                 return this;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+                if (method != FlacPreScanMethodMode.Async)
+                    _stream.Position = saveOffset;
+            }
             finally
             {
                 _isRunning = false;
@@ -162,9 +168,15 @@ namespace NAudio.Flac
                                     if (frames.Count > 0)
                                     {
                                         var last = frames.Last();
-                                        if (last.Header.FrameNumber + 1 != header.FrameNumber)
+                                        if (frameInfo.Header.NumberType == FlacNumberType.FrameNumber && last.Header.FrameNumber + 1 != header.FrameNumber)
                                         {
-                                            Debug.WriteLineIf(last.Header.FrameNumber + 1 != header.FrameNumber, $"Sequence missmatch: previous {last.Header.FrameNumber}, current {header.FrameNumber}");
+                                            Debug.WriteLine($"Sequence missmatch: previous {last.Header.FrameNumber}, current {header.FrameNumber}");
+                                            ptr = ptrSafe;
+                                            continue;
+                                        }
+                                        else if (frameInfo.Header.NumberType == FlacNumberType.SampleNumber && last.Header.SampleNumber >= header.SampleNumber)
+                                        {
+                                            Debug.WriteLine($"Sequence missmatch: previous {last.Header.SampleNumber}, current {header.SampleNumber}");
                                             ptr = ptrSafe;
                                             continue;
                                         }

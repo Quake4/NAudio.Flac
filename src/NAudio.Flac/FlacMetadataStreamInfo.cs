@@ -30,6 +30,14 @@ namespace NAudio.Flac
                 MD5 = reader.ReadBytes(16);
                 bitreader.Dispose();
             }
+
+            if (MinFrameSize == 0)
+                MinFrameSize = FlacConstant.FrameHeaderSize;
+            if (MaxFrameSize == 0)
+                MaxFrameSize = (uint)(MaxBlockSize * Channels * BitsPerSample >> 3);
+
+            if (BitsPerSample > 24)
+                throw new FlacException("Flac decoder support only 24bit audio", FlacLayer.Metadata);
         }
 
         public ushort MinBlockSize { get; private set; }

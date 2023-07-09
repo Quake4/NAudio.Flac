@@ -15,6 +15,7 @@ namespace NAudio.Flac
         private GCHandle _handle1, _handle2;
         private int[] _destBuffer;
         private int[] _residualBuffer;
+        private byte[] _buffer;
 
         public FlacFrameHeader Header { get; private set; }
 
@@ -77,11 +78,9 @@ namespace NAudio.Flac
             var data = AllocOuputMemory();
             _data = data;
 
-            byte[] buffer = new byte[(_streamInfo.MaxFrameSize * Header.Channels * Header.BitsPerSample * 2 >> 3)];
+            int read = _stream.Read(_buffer, 0, (int)Math.Min(_buffer.Length, _stream.Length - _stream.Position));
 
-            int read = _stream.Read(buffer, 0, (int)Math.Min(buffer.Length, _stream.Length - _stream.Position));
-
-            fixed (byte* ptrBuffer = buffer)
+            fixed (byte* ptrBuffer = _buffer)
             {
                 FlacBitReader reader = new FlacBitReader(ptrBuffer, 0);
                 for (int c = 0; c < Header.Channels; c++)
@@ -140,7 +139,7 @@ namespace NAudio.Flac
             }
         }
 
-        public unsafe int GetBuffer(ref byte[] buffer, int offset)
+        public unsafe int GetBuffer(ref byte[] buffer)
         {
             int desiredsize = Header.BlockSize * Header.Channels * ((Header.BitsPerSample + 7) / 8); // align to bytes
             if (buffer == null || buffer.Length < desiredsize)
@@ -148,9 +147,9 @@ namespace NAudio.Flac
 
             fixed (byte* ptrBuffer = buffer)
             {
-                byte* ptr = ptrBuffer;
                 if (Header.BitsPerSample == 8)
                 {
+                    byte* ptr = ptrBuffer;
                     for (int i = 0; i < Header.BlockSize; i++)
                     {
                         for (int c = 0; c < Header.Channels; c++)
@@ -158,21 +157,23 @@ namespace NAudio.Flac
                             *(ptr++) = (byte)(_data[c].DestBuffer[i] + 0x80);
                         }
                     }
+                    return (int)(ptr - ptrBuffer);
                 }
                 else if (Header.BitsPerSample == 16)
                 {
+                    short* ptr = (short*)ptrBuffer;
                     for (int i = 0; i < Header.BlockSize; i++)
                     {
                         for (int c = 0; c < Header.Channels; c++)
                         {
-                            short val = (short)(_data[c].DestBuffer[i]); //remove
-                            *(ptr++) = (byte)(val & 0xFF);
-                            *(ptr++) = (byte)((val >> 8) & 0xFF);
+                            *(ptr++) = (short)(_data[c].DestBuffer[i]);
                         }
                     }
+                    return (int)((byte*)ptr - ptrBuffer);
                 }
                 else if (Header.BitsPerSample == 24)
                 {
+                    byte* ptr = ptrBuffer;
                     for (int i = 0; i < Header.BlockSize; i++)
                     {
                         for (int c = 0; c < Header.Channels; c++)
@@ -183,6 +184,19 @@ namespace NAudio.Flac
                             *(ptr++) = (byte)((val >> 16) & 0xFF);
                         }
                     }
+                    return (int)(ptr - ptrBuffer);
+                }
+                else if (Header.BitsPerSample == 32)
+                {
+                    int* ptr = (int*)ptrBuffer;
+                    for (int i = 0; i < Header.BlockSize; i++)
+                    {
+                        for (int c = 0; c < Header.Channels; c++)
+                        {
+                            *(ptr++) = (_data[c].DestBuffer[i]);
+                        }
+                    }
+                    return (int)((byte*)ptr - ptrBuffer);
                 }
                 else
                 {
@@ -190,8 +204,6 @@ namespace NAudio.Flac
                     Debug.WriteLine(error);
                     throw new FlacException(error, FlacLayer.Frame);
                 }
-
-                return (int)(ptr - ptrBuffer);
             }
         }
 
@@ -201,6 +213,8 @@ namespace NAudio.Flac
                 _destBuffer = new int[Header.Channels * Header.BlockSize];
             if (_residualBuffer == null || _residualBuffer.Length < (Header.Channels * Header.BlockSize))
                 _residualBuffer = new int[Header.Channels * Header.BlockSize];
+            if (_buffer == null || _buffer.Length < _streamInfo.MaxFrameSize)
+                _buffer = new byte[_streamInfo.MaxFrameSize];
 
             List<FlacSubFrameData> output = new List<FlacSubFrameData>();
 

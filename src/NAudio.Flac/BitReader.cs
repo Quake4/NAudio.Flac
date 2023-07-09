@@ -70,12 +70,7 @@ namespace NAudio.Flac
             unchecked
             {
                 byte* ptr = _buffer;
-                uint result = *(ptr++);
-                result = (result << 8) + *(ptr++);
-                result = (result << 8) + *(ptr++);
-                result = (result << 8) + *(ptr++);
-
-                return result << _bitoffset;
+                return (uint)((*(ptr++) << 24 | *(ptr++) << 16 | *(ptr++) << 8 | *(ptr++)) << _bitoffset);
             }
         }
 
@@ -93,12 +88,14 @@ namespace NAudio.Flac
                 throw new ArgumentOutOfRangeException("bits");
 
             int tmp = _bitoffset + bits;
-            _buffer += tmp >> 3; //skip bytes
+            int tmp3 = tmp >> 3;
+
+            _buffer += tmp3; //skip bytes
             _bitoffset = tmp & 7; //bitoverflow -> max 7 bit
 
             _cache = PeekCache();
 
-            _position += tmp >> 3;
+            _position += tmp3;
         }
 
         public uint ReadBits(int bits)

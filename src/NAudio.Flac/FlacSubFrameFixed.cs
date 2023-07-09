@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-namespace NAudio.Flac
+﻿namespace NAudio.Flac
 {
     public sealed class FlacSubFrameFixed : FlacSubFrameBase
     {
@@ -14,7 +13,11 @@ namespace NAudio.Flac
             }
 
             Residual = new FlacResidual(reader, header, data, order); //necessary for decoding
-            RestoreSignal(data, header.BlockSize - order, order);
+
+            if (bps + order <= 32)
+                RestoreSignal(data, header.BlockSize - order, order);
+            else
+                RestoreSignalWide(data, header.BlockSize - order, order);
         }
 
         //http://www.hpl.hp.com/techreports/1999/HPL-1999-144.pdf
@@ -22,8 +25,6 @@ namespace NAudio.Flac
         {
             int* residual = subframeData.ResidualBuffer + predictorOrder;
             int* data = subframeData.DestBuffer + predictorOrder;
-
-            int t0, t1, t2; //temp
 
             switch (predictorOrder)
             {
@@ -35,56 +36,107 @@ namespace NAudio.Flac
                     break;
 
                 case 1:
-                    t1 = data[-1];
                     for (int i = 0; i < length; i++)
                     {
-                        t1 += *(residual++);
-                        *(data++) = t1;
+                        *(data) = *(residual++) + data[-1];
+                        data++;
                     }
                     break;
 
                 case 2:
-                    t2 = data[-2];
-                    t1 = data[-1];
                     for (int i = 0; i < length; i++)
                     {
-                        *(data++) = t0 = ((t1 << 1) + *(residual++)) - t2;
-                        t2 = t1;
-                        t1 = t0;
+                        *(data) = *(residual++) + (data[-1] << 1) - data[-2];
+                        data++;
                     }
                     break;
 
                 case 3:
                     for (int i = 0; i < length; i++)
                     {
-                        *(data) = *(residual) +
-                                    (((data[-1] - data[-2]) << 1) + (data[-1] - data[-2])) +
+                        *(data) = *(residual++) +
+                                    ((data[-1] - data[-2]) << 1) + (data[-1] - data[-2]) +
                                     data[-3];
-
                         data++;
-                        residual++;
                     }
                     break;
 
                 case 4:
                     for (int i = 0; i < length; i++)
                     {
-                        *(data) = *(residual) +
+                        *(data) = *(residual++) +
                                     ((data[-1] + data[-3]) << 2) -
                                     ((data[-2] << 2) + (data[-2] << 1)) -
                                     data[-4];
-
                         data++;
-                        residual++;
                     }
                     break;
 
                 default:
-                    Debug.WriteLine("Invalid FlacFixedSubFrame predictororder.");
+                    System.Diagnostics.Debug.WriteLine("Invalid FlacFixedSubFrame predictororder.");
                     return false;
             }
 
             return true;
         }
-    }
+
+		private unsafe bool RestoreSignalWide(FlacSubFrameData subframeData, int length, int predictorOrder)
+		{
+			int* residual = subframeData.ResidualBuffer + predictorOrder;
+			int* data = subframeData.DestBuffer + predictorOrder;
+
+			switch (predictorOrder)
+			{
+				case 0:
+					for (int i = 0; i < length; i++)
+					{
+						*(data++) = *(residual++);
+					}
+					break;
+
+				case 1:
+					for (int i = 0; i < length; i++)
+					{
+						*(data) = (int)(*(residual++) + (long)data[-1]);
+						data++;
+					}
+					break;
+
+				case 2:
+					for (int i = 0; i < length; i++)
+					{
+						*(data) = (int)(*(residual++) + ((long)data[-1] << 1) - data[-2]);
+						data++;
+					}
+					break;
+
+				case 3:
+					for (int i = 0; i < length; i++)
+					{
+						*(data) = (int)(*(residual++) +
+									((((long)data[-1] - data[-2]) << 1) + ((long)data[-1] - data[-2])) +
+									data[-3]);
+						data++;
+					}
+					break;
+
+				case 4:
+					for (int i = 0; i < length; i++)
+					{
+						*(data) = (int)(*(residual++) +
+									(((long)data[-1] + data[-3]) << 2) -
+									(((long)data[-2] << 2) + ((long)data[-2] << 1)) -
+									data[-4]);
+						data++;
+					}
+					break;
+
+				default:
+					System.Diagnostics.Debug.WriteLine("Invalid FlacFixedSubFrame predictororder.");
+					return false;
+			}
+
+			return true;
+		}
+	}
 }

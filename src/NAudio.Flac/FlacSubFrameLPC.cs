@@ -1,12 +1,10 @@
-﻿using NAudio.Utils;
-using System;
+﻿using System;
 using System.Diagnostics;
 
 namespace NAudio.Flac
 {
     public sealed class FlacSubFrameLPC : FlacSubFrameBase
     {
-        private readonly int[] _warmup;
         private readonly int[] _qlpCoeffs;
         private readonly int _lpcShiftNeeded;
         private readonly int _qlpCoeffPrecision;
@@ -17,36 +15,30 @@ namespace NAudio.Flac
 
         public int[] QLPCoeffs { get { return _qlpCoeffs; } }
 
-        public int[] Warmup { get { return _warmup; } }
-
         public FlacResidual Residual { get; private set; }
 
         public unsafe FlacSubFrameLPC(FlacBitReader reader, FlacFrameHeader header, FlacSubFrameData data, int bps, int order)
             : base(header)
         {
-
             //warmup
-            _warmup = new int[FlacConstant.MaxLpcOrder];
             for (int i = 0; i < order; i++)
             {
-                _warmup[i] = data.ResidualBuffer[i] = reader.ReadBitsSigned(bps);
+                data.ResidualBuffer[i] = data.DestBuffer[i] = reader.ReadBitsSigned(bps);
             }
 
             //header
-            int u32 = (int)reader.ReadBits(FlacConstant.SubframeLpcQlpCoeffPrecisionLen);
-            if (u32 == (1 << FlacConstant.SubframeLpcQlpCoeffPrecisionLen) - 1)
+            _qlpCoeffPrecision = (int)reader.ReadBits(FlacConstant.SubframeLpcQlpCoeffPrecisionLen) + 1;
+            if (_qlpCoeffPrecision >= (1 << FlacConstant.SubframeLpcQlpCoeffPrecisionLen))
             {
-                Debug.WriteLine("Invalid FlacLPC qlp coeff precision.");
+                System.Diagnostics.Debug.WriteLine("Invalid FlacLPC qlp coeff precision.");
                 return; //return false;
             }
-            _qlpCoeffPrecision = u32 + 1;
 
-            int level = reader.ReadBitsSigned(FlacConstant.SubframeLpcQlpShiftLen);
-            if (level < 0)
+            _lpcShiftNeeded = reader.ReadBitsSigned(FlacConstant.SubframeLpcQlpShiftLen);
+            if (_lpcShiftNeeded < 0)
                 throw new Exception("negative shift");
-            _lpcShiftNeeded = level;
 
-            _qlpCoeffs = new int[FlacConstant.MaxLpcOrder];
+            _qlpCoeffs = new int[order];
 
             //qlp coeffs
             for (int i = 0; i < order; i++)
@@ -56,42 +48,10 @@ namespace NAudio.Flac
 
             Residual = new FlacResidual(reader, header, data, order);
 
-            for (int i = 0; i < order; i++)
-            {
-                data.DestBuffer[i] = data.ResidualBuffer[i];
-            }
-
-            int i1 = order;
-            int result = 0;
-            while ((i1 >>= 1) != 0)
-            {
-                result++;
-            }
-            if (bps + _qlpCoeffPrecision + result <= 32)
-            {
-                if (bps <= 16 && _qlpCoeffPrecision <= 16)
-                    RestoreLPCSignal(data.ResidualBuffer + order, data.DestBuffer + order, header.BlockSize - order, order); //Restore(data.residualBuffer + order, data.destBuffer, Header.BlockSize - order, order, order);
-                else
-                    RestoreLPCSignal(data.ResidualBuffer + order, data.DestBuffer + order, header.BlockSize - order, order);
-            }
+            if (bps <= 16)
+                RestoreLPCSignal(data.ResidualBuffer + order, data.DestBuffer + order, header.BlockSize - order, order);
             else
-            {
-                RestoreLPCSignalWide(data.ResidualBuffer + order, data.DestBuffer + order, header.BlockSize - order, order);//RestoreWide(data.residualBuffer + order, data.destBuffer, Header.BlockSize - order, order, order);
-            }
-        }
-
-        private unsafe void Restore(int* residual, int* dest, int length, int predictorOrder, int destOffset)
-        {
-            for (int i = 0; i < length; i++)
-            {
-                int sum = 0;
-                for (int j = 0; j < predictorOrder; j++)
-                {
-                    sum += (int)_qlpCoeffs[j] * (int)dest[destOffset + i - j - 1];
-                }
-                //System.Diagnostics.Debug.WriteLine(i + " " + (residual[i] + (int)(sum >> LPCShiftNeeded)));
-                dest[destOffset + i] = residual[i] + (int)(sum >> _lpcShiftNeeded);
-            }
+                RestoreLPCSignalWide(data.ResidualBuffer + order, data.DestBuffer + order, header.BlockSize - order, order);
         }
 
         private unsafe void RestoreLPCSignal(int* residual, int* destination, int length, int order)
@@ -129,10 +89,10 @@ namespace NAudio.Flac
                 history = dest;
                 for (int j = 0; j < order; j++)
                 {
-                    sum += (long)_qlpCoeffs[j] * ((long)*(--history));
+                    sum += (long)_qlpCoeffs[j] * *(--history);
                 }
 
-                *(dest++) = *(r++) + (int)(sum >> _lpcShiftNeeded);
+                *(dest++) = (int)(*(r++) + (sum >> _lpcShiftNeeded));
             }
         }
     }

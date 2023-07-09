@@ -1,15 +1,23 @@
 ﻿using System.Diagnostics;
+
 namespace NAudio.Flac
 {
     public class FlacSubFrameBase
     {
         public unsafe static FlacSubFrameBase GetSubFrame(FlacBitReader reader, FlacSubFrameData data, FlacFrameHeader header, int bps)
         {
-            int wastedBits = 0, order = 0;
+            int wastedBits = 0;
 
             uint x = reader.ReadBits(8);
             bool hasWastedBits = (x & 1) != 0;
-            x &= 0xFE; //1111 1110
+
+            if ((x & 0x80) != 0)
+            {
+                Debug.WriteLine("Flacdecoder lost sync while reading FlacSubFrameHeader. [x & 0x80].");
+                return null;
+            }
+
+            x = (x & 0xFE) >> 1;
 
             if (hasWastedBits)
             {
@@ -18,41 +26,27 @@ namespace NAudio.Flac
                 bps -= wastedBits;
             }
 
-            if ((x & 0x80) != 0)
-            {
-                Debug.WriteLine("Flacdecoder lost sync while reading FlacSubFrameHeader. [x & 0x80].");
-                return null;
-            }
-
             FlacSubFrameBase subFrame;
-
-            if ((x > 2 && x < 16) ||
-                 (x > 24 && x < 64))
-            {
-                Debug.WriteLine("Invalid FlacSubFrameHeader. [" + x.ToString("x") + "]");
-                return null;
-            }
 
             if (x == 0)
             {
+                //constant
                 subFrame = new FlacSubFrameConstant(reader, header, data, bps);
             }
-            else if (x == 2)
+            else if (x == 1)
             {
                 //verbatim
                 subFrame = new FlacSubFrameVerbatim(reader, header, data, bps);
             }
-            else if (x >= 16 && x <= 24)
-            {
-                //fixed
-                order = (int)((x >> 1) & 7);
-                subFrame = new FlacSubFrameFixed(reader, header, data, bps, order);
-            }
-            else if (x >= 64)
+            else if ((x & 0x20) > 0)
             {
                 //lpc
-                order = (int)(((x >> 1) & 31) + 1);
-                subFrame = new FlacSubFrameLPC(reader, header, data, bps, order);
+                subFrame = new FlacSubFrameLPC(reader, header, data, bps, (int)((x & 31) + 1));
+            }
+            else if ((x & 0x08) > 0)
+            {
+                //fixed
+                subFrame = new FlacSubFrameFixed(reader, header, data, bps, (int)(x & 7));
             }
             else
             {
@@ -69,9 +63,6 @@ namespace NAudio.Flac
                 }
             }
 
-            //System.Diagnostics.Debug.WriteLine(subFrame.GetType().Name);
-
-            //check null removed
             subFrame.WastedBits = wastedBits;
 
             return subFrame;

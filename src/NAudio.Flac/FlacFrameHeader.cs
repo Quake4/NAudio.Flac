@@ -121,27 +121,16 @@ namespace NAudio.Flac
 
                 //blocksize
                 x = headerBuffer[2] >> 4;
-                int blocksize = -1;
 
-                if (x == 0)
-                {
-                    Error("Invalid Blocksize value: 0", loggerLocation);
-                    return false;
-                }
-                else if (x == 1)
-                    blocksize = 192;
-                else if (x >= 2 && x <= 5)
-                    blocksize = 576 << (x - 2);
-                else if (x == 6 || x == 7)
-                    _blocksizeHint = x;
-                else if (x >= 8 && x <= 15)
-                    blocksize = 256 << (x - 8);
-                else
+                if (x <= 0 || x >= FlacConstant.FlacBlockSizes.Length)
                 {
                     Error("Invalid Blocksize value: " + x, loggerLocation);
                     return false;
                 }
-                BlockSize = blocksize;
+                else
+                    BlockSize = FlacConstant.FlacBlockSizes[x];
+                if (BlockSize == 0)
+                    _blocksizeHint = x;
 
                 #endregion blocksize
 
@@ -149,28 +138,21 @@ namespace NAudio.Flac
 
                 //samplerate
                 x = headerBuffer[2] & 0x0F;
-                int sampleRate = -1;
 
-                if (x == 0)
+                if (x <= 0 || x >= FlacConstant.SampleRateTable.Length)
                 {
                     if (streamInfo != null)
-                        sampleRate = streamInfo.SampleRate;
+                        SampleRate = streamInfo.SampleRate;
                     else
                     {
-                        Error("Missing Samplerate. Samplerate Index = 0 && streamInfoMetaData == null.", loggerLocation);
+                        Error("Missing Samplerate. Samplerate = " + x + " && streamInfoMetaData == null.", loggerLocation);
                         return false;
                     }
                 }
-                else if (x >= 1 && x <= 11)
-                    sampleRate = FlacConstant.SampleRateTable[x];
-                else if (x >= 12 && x <= 14)
-                    _sampleRateHint = x;
                 else
-                {
-                    Error("Invalid SampleRate value: " + x, loggerLocation);
-                    return false;
-                }
-                SampleRate = sampleRate;
+                    SampleRate = FlacConstant.SampleRateTable[x];
+                if (SampleRate == 0)
+                    _sampleRateHint = x;
 
                 #endregion samplerate
 
@@ -201,11 +183,10 @@ namespace NAudio.Flac
                 #region bitspersample
 
                 x = (headerBuffer[3] & 0x0E) >> 1;
-                int bitsPerSample = -1;
                 if (x == 0)
                 {
                     if (streamInfo != null)
-                        bitsPerSample = streamInfo.BitsPerSample;
+                        BitsPerSample = streamInfo.BitsPerSample;
                     else
                     {
                         Error("Missing BitsPerSample. Index = 0 && streamInfoMetaData == null.", loggerLocation);
@@ -214,13 +195,11 @@ namespace NAudio.Flac
                 }
                 else if (x == 3 || x >= FlacConstant.BitPerSampleTable.Length || x < 0)
                 {
-                    Error("Invalid BitsPerSampleIndex", loggerLocation);
+                    Error("Invalid BitsPerSampleIndex: " + x, loggerLocation);
                     return false;
                 }
                 else
-                    bitsPerSample = FlacConstant.BitPerSampleTable[x];
-
-                BitsPerSample = bitsPerSample;
+                    BitsPerSample = FlacConstant.BitPerSampleTable[x];
 
                 #endregion bitspersample
 
