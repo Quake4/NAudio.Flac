@@ -96,6 +96,9 @@ namespace NAudio.Flac
 
                     var subframe = FlacSubFrameBase.GetSubFrame(reader, data[c], Header, bps);
 
+                    if (subframe == null)
+                        continue;
+
                     subFrames.Add(subframe);
                 }
 
