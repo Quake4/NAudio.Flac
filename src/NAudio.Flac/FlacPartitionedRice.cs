@@ -81,17 +81,22 @@ namespace NAudio.Flac
                             msbs += bits;
                         }
 
+                        // bits | stop bit | riceParameter bits | next data bits
+
                         uint uval = 0;
-                        if (riceParameter <= msbs)
+                        // no any speed up
+                        /*int btsk = riceParameter + (int)bits + 1;
+                        if (riceParameter <= 32 - btsk)
                         {
-                            int btsk = riceParameter + (int)bits + 1;
+                            // optimized code - one call of seekbits
                             uval = (msbs << riceParameter) | ((reader.Cache >> (32 - btsk)) & mask);
                             reader.SeekBits(btsk);
                         }
-                        else
+                        else*/
                         {
-                            reader.SeekBits((int)(msbs & 7) + 1);
-                            uval = (msbs << riceParameter) | ((reader.Cache >> (32 - riceParameter)));
+                            // sign bit/s outside cache value - or readable code
+                            reader.SeekBits((int)bits + 1);
+                            uval = (msbs << riceParameter) | (reader.Cache >> (32 - riceParameter));
                             reader.SeekBits(riceParameter);
                         }
                         *(ptrDest++) = (int)(uval >> 1 ^ -(int)(uval & 1));
