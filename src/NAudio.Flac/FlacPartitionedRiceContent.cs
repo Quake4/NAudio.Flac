@@ -1,5 +1,6 @@
 ﻿namespace NAudio.Flac
 {
+    // unused
     public unsafe class FlacPartitionedRiceContent
     {
         public int[] Parameters;

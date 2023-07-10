@@ -28,7 +28,6 @@
                 RiceOrder = riceOrder;
                 Rice = rice;
 #endif
-
             }
             else
             {
