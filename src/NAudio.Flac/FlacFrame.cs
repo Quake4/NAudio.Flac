@@ -86,6 +86,9 @@ namespace NAudio.Flac
                 for (int c = 0; c < Header.Channels; c++)
                 {
                     int bps = Header.BitsPerSample;
+                    if (bps == 32 && Header.ChannelAssignment != ChannelAssignment.Independent)
+                        throw new FlacException("Only Independent channels must be in 32 bit!", FlacLayer.Frame);
+
                     if (Header.ChannelAssignment == ChannelAssignment.MidSide || Header.ChannelAssignment == ChannelAssignment.LeftSide)
                         bps += c;
                     else if (Header.ChannelAssignment == ChannelAssignment.RightSide)

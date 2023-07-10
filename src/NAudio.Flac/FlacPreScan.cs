@@ -168,15 +168,17 @@ namespace NAudio.Flac
                                     if (frames.Count > 0)
                                     {
                                         var last = frames.Last();
+                                        if (last.Header.NumberType != frameInfo.Header.NumberType)
+                                            continue;
                                         if (frameInfo.Header.NumberType == FlacNumberType.FrameNumber && last.Header.FrameNumber + 1 != header.FrameNumber)
                                         {
-                                            Debug.WriteLine($"Sequence missmatch: previous {last.Header.FrameNumber}, current {header.FrameNumber}");
+                                            Debug.WriteLine($"Sequence frame missmatch: previous {last.Header.FrameNumber}, current {header.FrameNumber}");
                                             ptr = ptrSafe;
                                             continue;
                                         }
                                         else if (frameInfo.Header.NumberType == FlacNumberType.SampleNumber && last.Header.SampleNumber >= header.SampleNumber)
                                         {
-                                            Debug.WriteLine($"Sequence missmatch: previous {last.Header.SampleNumber}, current {header.SampleNumber}");
+                                            Debug.WriteLine($"Sequence sample missmatch: previous {last.Header.SampleNumber}, current {header.SampleNumber}");
                                             ptr = ptrSafe;
                                             continue;
                                         }

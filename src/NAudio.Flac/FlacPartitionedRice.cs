@@ -85,7 +85,7 @@ namespace NAudio.Flac
                         }
 
                         uint uval = 0;
-                        if (riceParameter <= 16)
+                        if (riceParameter <= msbs)
                         {
                             int btsk = riceParameter + (int)bits + 1;
                             uval = (msbs << riceParameter) | ((reader.Cache >> (32 - btsk)) & mask);
