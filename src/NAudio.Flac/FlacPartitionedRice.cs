@@ -68,7 +68,7 @@ namespace NAudio.Flac
                 }
                 else
                 {
-                    uint mask = (1u << riceParameter) - 1;
+                    //uint mask = (1u << riceParameter) - 1;
                     for (int i = 0; i < nvals; i++)
                     {
                         uint bits = putable[reader.Cache >> 24];
