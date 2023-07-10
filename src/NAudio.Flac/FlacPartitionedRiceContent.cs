@@ -1,7 +1,6 @@
 ﻿namespace NAudio.Flac
 {
-    // unused
-    public unsafe class FlacPartitionedRiceContent
+    /*public unsafe class FlacPartitionedRiceContent
     {
         public int[] Parameters;
         public int[] RawBits;
@@ -19,5 +18,5 @@
                 _capByOrder = po;
             }
         }
-    }
+    }*/
 }
