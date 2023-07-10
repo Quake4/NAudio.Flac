@@ -35,9 +35,10 @@ namespace NAudio.Flac
                 MinFrameSize = FlacConstant.FrameHeaderSize;
             if (MaxFrameSize == 0)
                 MaxFrameSize = (uint)(MaxBlockSize * Channels * BitsPerSample >> 3);
-
+#if !DEBUG
             if (BitsPerSample > 24)
                 throw new FlacException("Flac decoder support only 24bit audio", FlacLayer.Metadata);
+#endif
         }
 
         public ushort MinBlockSize { get; private set; }

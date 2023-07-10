@@ -16,7 +16,7 @@
             {
                 int riceOrder = (int)reader.ReadBits(FlacConstant.EntropyCodingMethodPartitionedRiceOrderLen);
 
-                FlacPartitionedRice rice = new FlacPartitionedRice(riceOrder, codingMethod, data.Content);
+                FlacPartitionedRice rice = new FlacPartitionedRice(riceOrder, codingMethod);
 
                 if (rice.ProcessResidual(reader, header, data, order) == false)
                 {
