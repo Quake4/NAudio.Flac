@@ -16,7 +16,7 @@ namespace NAudio.Flac
         {
             if (buffer == null || buffer.Length <= 0)
                 throw new ArgumentException("buffer is null or has no elements", "buffer");
-            if (offset < 0)
+            if (buffer.Length - offset < 0)
                 throw new ArgumentOutOfRangeException("offset");
 
             _hBuffer = GCHandle.Alloc(buffer, GCHandleType.Pinned);
