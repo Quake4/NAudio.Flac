@@ -15,21 +15,18 @@ namespace NAudio.Flac
             int bitmask = bits == 8 ? 0x00FF : 0xFFFF;
             crc_table = new ushort[tableSize];
 
-            int poly = (ushort) (polySumm + (1 << bits));
+            int poly = (ushort)(polySumm + (1 << bits));
             for (int i = 0; i < crc_table.Length; i++)
             {
                 int crc = i;
                 for (int n = 0; n < bits; n++)
                 {
-                    if ((crc & (1 << (bits - 1))) != 0)
-                    {
-                        crc = ((crc << 1)
-                               ^ poly);
-                    }
+                    if ((crc & (1u << (bits - 1))) != 0)
+                        crc = (crc << 1) ^ poly;
                     else
                         crc = crc << 1;
                 }
-                crc_table[i] = (UInt16) (crc & bitmask);
+                crc_table[i] = (ushort)(crc & bitmask);
             }
         }
 

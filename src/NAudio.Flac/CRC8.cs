@@ -23,24 +23,17 @@
         {
             int res = 0;
             for (int i = offset; i < offset + count; i++)
-            {
                 res = crc_table[res ^ buffer[i]];
-            }
-
-            return (byte) res;
+            return (byte)res;
         }
 
-        public unsafe byte CalcCheckSum(byte* buffer, int offset, int count)
+        public unsafe byte CalcCheckSum(byte* buffer, int count)
         {
-            //byte[] buff = new byte[count];
-            //System.Runtime.InteropServices.Marshal.Copy(new IntPtr(buffer), buff, offset, count);
-            //return CalcCheckSum(buff, 0, buff.Length);
             int res = 0;
-            for (int i = offset; i < offset + count; i++)
-            {
-                res = crc_table[res ^ buffer[i]];
-            }
-            return (byte) res;
+            byte* ptr = buffer;
+            for (int i = 0; i < count; i++)
+                res = crc_table[res ^ *ptr++];
+            return (byte)res;
         }
     }
 }
