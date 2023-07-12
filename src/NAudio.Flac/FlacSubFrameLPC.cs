@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 
 namespace NAudio.Flac
 {
@@ -51,20 +50,18 @@ namespace NAudio.Flac
             if (bps <= 16)
                 RestoreLPCSignal(data.ResidualBuffer + order, data.DestBuffer + order, header.BlockSize - order, order);
             else
-                RestoreLPCSignalWide(data.ResidualBuffer + order, data.DestBuffer + order, header.BlockSize - order, order);
+                RestoreLPCSignalWide(data.ResidualBuffer + order, data.DestBuffer + order, header.BlockSize - order, order, bps == 32);
         }
 
         private unsafe void RestoreLPCSignal(int* residual, int* destination, int length, int order)
         {
-            int sum = 0;
-
             int* r = residual;
             int* history;
             int* dest = destination;
 
             for (int i = 0; i < length; i++)
             {
-                sum = 0;
+                int sum = 0;
                 history = dest;
                 for (int j = 0; j < order; j++)
                 {
@@ -75,24 +72,26 @@ namespace NAudio.Flac
             }
         }
 
-        private unsafe void RestoreLPCSignalWide(int* residual, int* destination, int length, int order)
+        private unsafe void RestoreLPCSignalWide(int* residual, int* destination, int length, int order, bool overflowCheck)
         {
-            long sum = 0;
-
             int* r = residual;
             int* history;
             int* dest = destination;
 
             for (int i = 0; i < length; i++)
             {
-                sum = 0;
+                long sum = 0;
                 history = dest;
                 for (int j = 0; j < order; j++)
                 {
                     sum += (long)_qlpCoeffs[j] * *(--history);
                 }
 
-                *(dest++) = (int)(*(r++) + (sum >> _lpcShiftNeeded));
+                var result = *(r++) + (sum >> _lpcShiftNeeded);
+                if (overflowCheck && (result > int.MaxValue || result < int.MinValue))
+                    throw new FlacException($"Overflow restore lpc signal (repack flac file with fixed flac encoder): {int.MinValue} <= {result} <= {int.MaxValue} ", FlacLayer.SubFrame);
+
+                *(dest++) = (int)(result);
             }
         }
     }
