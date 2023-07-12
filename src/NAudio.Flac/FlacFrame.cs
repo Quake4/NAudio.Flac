@@ -11,6 +11,7 @@ namespace NAudio.Flac
         private List<FlacSubFrameData> _data;
         private Stream _stream;
         private FlacMetadataStreamInfo _streamInfo;
+        private FlacBitReader _reader;
 
         private GCHandle _handle1, _handle2;
         private int[] _destBuffer;
@@ -23,26 +24,7 @@ namespace NAudio.Flac
 
         public bool HasError { get; private set; }
 
-        public static FlacFrame FromStream(Stream stream)
-        {
-            FlacFrame frame = new FlacFrame(stream);
-            return frame;
-            //return frame.HasError ? null : frame;
-        }
-
-        public static FlacFrame FromStream(Stream stream, FlacMetadataStreamInfo streamInfo)
-        {
-            FlacFrame frame = new FlacFrame(stream, streamInfo);
-            return frame;
-            //return frame.HasError ? null : frame;
-        }
-
-        private FlacFrame(Stream stream)
-            : this(stream, null)
-        {
-        }
-
-        private FlacFrame(Stream stream, FlacMetadataStreamInfo streamInfo)
+        public FlacFrame(Stream stream, FlacMetadataStreamInfo streamInfo)
         {
             if (stream == null) throw new ArgumentNullException("stream");
             if (stream.CanRead == false) throw new ArgumentException("Stream is not readable");
@@ -53,65 +35,85 @@ namespace NAudio.Flac
 
         public bool NextFrame()
         {
-            Decode(_stream, _streamInfo);
+            Decode();
             return !HasError;
         }
 
-        private void Decode(Stream stream, FlacMetadataStreamInfo streamInfo)
+        private unsafe void Decode()
         {
-            Header = new FlacFrameHeader(stream, streamInfo);
-            _stream = stream;
-            _streamInfo = streamInfo;
-            HasError = Header.HasError;
-            if (!HasError)
-            {
-                ReadSubFrames();
-                FreeBuffers();
-            }
-        }
+			if (_buffer == null || _buffer.Length < _streamInfo.MaxFrameSize)
+				_buffer = new byte[_streamInfo.MaxFrameSize];
+
+			long frameStartPosition = _stream.Position;
+			int read = _stream.Read(_buffer, 0, (int)Math.Min(_buffer.Length, _stream.Length - _stream.Position));
+			_stream.Position = frameStartPosition;
+
+			fixed (byte* ptrBuffer = _buffer)
+			using (_reader = new FlacBitReader(ptrBuffer, 0))
+			{
+				try
+				{
+					Header = new FlacFrameHeader(ptrBuffer, _streamInfo, true);
+					HasError = Header.HasError;
+					if (!HasError)
+					{
+						_reader.SeekBytes(Header.Length);
+						ReadSubFrames();
+
+						var crc = CRC16.Instance.CalcCheckSum(ptrBuffer, _reader.Position);
+						if (crc != 0) //data + crc = 0
+						{
+							Debug.WriteLine($"Wrong frame CRC16: {crc} {Crc16}");
+							HasError = true;
+							_stream.Position = frameStartPosition;
+							return;
+						}
+
+						_stream.Position = (frameStartPosition + _reader.Position) >= _stream.Length ? _stream.Length : (frameStartPosition + _reader.Position);
+
+						SamplesToBytes(_data);
+					}
+				}
+				catch
+				{
+					_stream.Position = frameStartPosition;
+				}
+				finally
+				{
+					FreeBuffers();
+				}
+			}
+			_reader = null;
+		}
 
         private unsafe void ReadSubFrames()
         {
             List<FlacSubFrameBase> subFrames = new List<FlacSubFrameBase>();
 
             //alocateOutput
-            var data = AllocOuputMemory();
-            _data = data;
+            _data = AllocOuputMemory();
 
-            int read = _stream.Read(_buffer, 0, (int)Math.Min(_buffer.Length, _stream.Length - _stream.Position));
-
-            fixed (byte* ptrBuffer = _buffer)
+            for (int c = 0; c < Header.Channels; c++)
             {
-                FlacBitReader reader = new FlacBitReader(ptrBuffer, 0);
-                for (int c = 0; c < Header.Channels; c++)
-                {
-                    int bps = Header.BitsPerSample;
-                    if (bps == 32 && Header.ChannelAssignment != ChannelAssignment.Independent)
-                        throw new FlacException("Only Independent channels must be in 32 bit!", FlacLayer.Frame);
+                int bps = Header.BitsPerSample;
+                if (bps == 32 && Header.ChannelAssignment != ChannelAssignment.Independent)
+                    throw new FlacException("Only Independent channels must be in 32 bit!", FlacLayer.Frame);
 
-                    if (Header.ChannelAssignment == ChannelAssignment.MidSide || Header.ChannelAssignment == ChannelAssignment.LeftSide)
-                        bps += c;
-                    else if (Header.ChannelAssignment == ChannelAssignment.RightSide)
-                        bps += 1 - c;
+                if (Header.ChannelAssignment == ChannelAssignment.MidSide || Header.ChannelAssignment == ChannelAssignment.LeftSide)
+                    bps += c;
+                else if (Header.ChannelAssignment == ChannelAssignment.RightSide)
+                    bps += 1 - c;
 
-                    var subframe = FlacSubFrameBase.GetSubFrame(reader, data[c], Header, bps);
+                var subframe = FlacSubFrameBase.GetSubFrame(_reader, _data[c], Header, bps);
 
-                    if (subframe == null)
-                        continue;
+                if (subframe == null)
+                    continue;
 
-                    subFrames.Add(subframe);
-                }
-
-                reader.Flush();
-                Crc16 = (ushort)reader.ReadBits(16);
-
-                _stream.Position -= read - reader.Position;
-
-                SamplesToBytes(_data);
-
-                //return reader.Position;
-                reader.Dispose();
+                subFrames.Add(subframe);
             }
+
+            _reader.Flush();
+            Crc16 = _reader.ReadUInt16();
         }
 
         private unsafe void SamplesToBytes(List<FlacSubFrameData> data)
@@ -147,6 +149,8 @@ namespace NAudio.Flac
 
         public unsafe int GetBuffer(ref byte[] buffer)
         {
+            if (HasError) return 0;
+
             int desiredsize = Header.BlockSize * Header.Channels * ((Header.BitsPerSample + 7) / 8); // align to bytes
             if (buffer == null || buffer.Length < desiredsize)
                 buffer = new byte[desiredsize];
@@ -219,8 +223,6 @@ namespace NAudio.Flac
                 _destBuffer = new int[Header.Channels * Header.BlockSize];
             if (_residualBuffer == null || _residualBuffer.Length < (Header.Channels * Header.BlockSize))
                 _residualBuffer = new int[Header.Channels * Header.BlockSize];
-            if (_buffer == null || _buffer.Length < _streamInfo.MaxFrameSize)
-                _buffer = new byte[_streamInfo.MaxFrameSize];
 
             List<FlacSubFrameData> output = new List<FlacSubFrameData>();
 

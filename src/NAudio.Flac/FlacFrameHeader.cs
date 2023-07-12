@@ -1,5 +1,4 @@
-﻿using NAudio.Utils;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 
@@ -33,9 +32,9 @@ namespace NAudio.Flac
 
         public bool HasError { get; private set; }
 
-        public long StreamPosition { get; private set; }
-
         internal bool PrintErrors = true;
+
+        public int Length { get; private set; }
 
         public FlacFrameHeader(Stream stream)
             : this(stream, null, true)
@@ -55,28 +54,27 @@ namespace NAudio.Flac
             //streamInfo can be null
 
             DoCRC = doCrc;
-            StreamPosition = stream.Position;
+            var position = stream.Position;
 
             byte[] headerBuffer = new byte[FlacConstant.FrameHeaderSize];
 
             HasError = !ParseHeader(stream, headerBuffer, streamInfo);
             if (HasError)
-                stream.Position = StreamPosition;
+                stream.Position = position;
         }
 
-        public unsafe FlacFrameHeader(ref byte* buffer, FlacMetadataStreamInfo streamInfo, bool doCrc)
-            : this(ref buffer, streamInfo, doCrc, true)
+        public unsafe FlacFrameHeader(byte* buffer, FlacMetadataStreamInfo streamInfo, bool doCrc)
+            : this(buffer, streamInfo, doCrc, true)
         {
         }
 
-        internal unsafe FlacFrameHeader(ref byte* buffer, FlacMetadataStreamInfo streamInfo, bool doCrc, bool logError)
+        internal unsafe FlacFrameHeader(byte* buffer, FlacMetadataStreamInfo streamInfo, bool doCrc, bool logError)
         {
             PrintErrors = logError; //optimized for prescan
 
             DoCRC = doCrc;
-            StreamPosition = -1;
 
-            HasError = !ParseHeader(ref buffer, streamInfo);
+            HasError = !ParseHeader(buffer, streamInfo);
         }
 
         private unsafe bool ParseHeader(Stream stream, byte[] headerBuffer, FlacMetadataStreamInfo streamInfo)
@@ -87,11 +85,8 @@ namespace NAudio.Flac
             {
                 fixed (byte* ptrBuffer = headerBuffer)
                 {
-                    byte* ptrSave = ptrBuffer;
-                    byte* __ptrBuffer = ptrBuffer;
-                    bool result = ParseHeader(ref __ptrBuffer, streamInfo);
-                    stream.Position -= (headerBuffer.Length - (__ptrBuffer - ptrSave)); //todo
-
+                    bool result = ParseHeader(ptrBuffer, streamInfo);
+                    stream.Position -= (headerBuffer.Length - Length);
                     return result;
                 }
             }
@@ -102,7 +97,7 @@ namespace NAudio.Flac
             }
         }
 
-        private unsafe bool ParseHeader(ref byte* headerBuffer, FlacMetadataStreamInfo streamInfo)
+        private unsafe bool ParseHeader(byte* headerBuffer, FlacMetadataStreamInfo streamInfo)
         {
             const string loggerLocation = "FlacFrameHeader.ParseHeader(byte*, FlacMetadataStreamInfo)";
             int x = -1; //tmp value to store in
@@ -114,8 +109,7 @@ namespace NAudio.Flac
                     return false;
                 }
 
-                byte* __headerbufferPtr = headerBuffer;
-                FlacBitReader reader = new FlacBitReader(__headerbufferPtr, 0);
+                FlacBitReader reader = new FlacBitReader(headerBuffer, 0);
 
                 #region blocksize
 
@@ -281,12 +275,9 @@ namespace NAudio.Flac
 
                 #endregion read hints
 
-                //if (Channels == 1 && BitsPerSample == 24 && SampleRate == 44100)
-                //    System.Diagnostics.Debugger.Break();
-
                 if (DoCRC)
                 {
-                    var crc8 = NAudio.Flac.CRC8.Instance.CalcCheckSum(reader.Buffer, 0, reader.Position);
+                    var crc8 = NAudio.Flac.CRC8.Instance.CalcCheckSum(reader.Buffer, reader.Position);
                     CRC8 = (byte)reader.ReadBits(8);
                     if (CRC8 != crc8)
                     {
@@ -295,7 +286,7 @@ namespace NAudio.Flac
                     }
                 }
 
-                headerBuffer += reader.Position;
+                Length = reader.Position;
 
                 reader.Dispose();
 

@@ -150,10 +150,9 @@ namespace NAudio.Flac
                         {
                             byte* ptrSafe = ptr;
                             ptr--;
-                            FlacFrameHeader tmp = null;
-                            if (IsFrame(ref ptr, streamInfo, baseHeader, out tmp))
+                            FlacFrameHeader header = null;
+                            if (IsFrame(ptr, streamInfo, baseHeader, out header))
                             {
-                                FlacFrameHeader header = tmp;
                                 if (frameInfo.IsFirstFrame)
                                 {
                                     baseHeader = header;
@@ -197,7 +196,6 @@ namespace NAudio.Flac
                                 {
                                     ptr = ptrSafe;
                                 }
-                                //todo:
                             }
                             else
                             {
@@ -213,9 +211,9 @@ namespace NAudio.Flac
             return frames;
         }
 
-        private unsafe bool IsFrame(ref byte* buffer, FlacMetadataStreamInfo streamInfo, FlacFrameHeader baseHeader, out FlacFrameHeader header)
+        private unsafe bool IsFrame(byte* buffer, FlacMetadataStreamInfo streamInfo, FlacFrameHeader baseHeader, out FlacFrameHeader header)
         {
-            header = new FlacFrameHeader(ref buffer, streamInfo, true, false);
+            header = new FlacFrameHeader(buffer, streamInfo, true, false);
             return !header.HasError;
         }
     }
