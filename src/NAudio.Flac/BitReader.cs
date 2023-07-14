@@ -70,7 +70,11 @@ namespace NAudio.Flac
             unchecked
             {
                 byte* ptr = _buffer;
-                return (uint)((*(ptr++) << 24 | *(ptr++) << 16 | *(ptr++) << 8 | *(ptr++)) << _bitoffset);
+                uint result = *(ptr++);
+                result = result << 8 | *(ptr++);
+                result = result << 8 | *(ptr++);
+                result = result << 8 | *(ptr++);
+                return result << _bitoffset;
             }
         }
 
