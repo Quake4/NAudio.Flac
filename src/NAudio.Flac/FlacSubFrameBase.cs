@@ -9,6 +9,8 @@ namespace NAudio.Flac
         public const int FixedMask = 0x08;
         public const int LPCMask = 0x20;
 
+        public bool HasError { get; protected set; }
+
         public unsafe static FlacSubFrameBase GetSubFrame(FlacBitReader reader, FlacSubFrameData data, FlacFrameHeader header, int bps)
         {
             int wastedBits = 0;
@@ -60,6 +62,9 @@ namespace NAudio.Flac
                 Debug.WriteLine("Invalid Flac-SubframeType: x = " + x + ".");
                 return null;
             }
+
+            if (subFrame.HasError)
+                return null;
 
             if (hasWastedBits)
             {

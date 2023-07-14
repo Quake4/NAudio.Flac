@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace NAudio.Flac
+﻿namespace NAudio.Flac
 {
     public sealed class FlacSubFrameLPC : FlacSubFrameBase
     {
@@ -29,13 +27,18 @@ namespace NAudio.Flac
             _qlpCoeffPrecision = (int)reader.ReadBits(FlacConstant.SubframeLpcQlpCoeffPrecisionLen) + 1;
             if (_qlpCoeffPrecision >= (1 << FlacConstant.SubframeLpcQlpCoeffPrecisionLen))
             {
-                System.Diagnostics.Debug.WriteLine("Invalid FlacLPC qlp coeff precision.");
-                return; //return false;
+                System.Diagnostics.Debug.WriteLine("Invalid FlacLPC qlp coeff precision: {_qlpCoeffPrecision}.");
+                HasError = true;
+                return;
             }
 
             _lpcShiftNeeded = reader.ReadBitsSigned(FlacConstant.SubframeLpcQlpShiftLen);
             if (_lpcShiftNeeded < 0)
-                throw new Exception("negative shift");
+            {
+                System.Diagnostics.Debug.WriteLine($"Negative shift in FlacLPC: {_lpcShiftNeeded}");
+                HasError = true;
+                return;
+            }
 
             _qlpCoeffs = new int[order];
 

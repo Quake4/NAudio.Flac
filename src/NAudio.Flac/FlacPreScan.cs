@@ -32,7 +32,7 @@ namespace NAudio.Flac
         public FlacPreScan StartScan(FlacMetadataStreamInfo streamInfo, FlacPreScanMethodMode method, CancellationToken token)
         {
             if (_isRunning)
-                throw new Exception("Scan is already running.");
+                throw new FlacException("Scan is already running.", FlacLayer.Top);
 
             _isRunning = true;
 
