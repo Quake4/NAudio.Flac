@@ -102,12 +102,12 @@ namespace NAudio.Flac
             for (int c = 0; c < Header.Channels; c++)
             {
                 int bps = Header.BitsPerSample;
-                if (bps == 32 && Header.ChannelAssignment != ChannelAssignment.Independent)
+                if (bps == 32 && Header.ChannelAssignment != FlacChannelAssignment.Independent)
                     throw new FlacException("Only Independent channels must be in 32 bit!", FlacLayer.Frame);
 
-                if (Header.ChannelAssignment == ChannelAssignment.MidSide || Header.ChannelAssignment == ChannelAssignment.LeftSide)
+                if (Header.ChannelAssignment == FlacChannelAssignment.MidSide || Header.ChannelAssignment == FlacChannelAssignment.LeftSide)
                     bps += c;
-                else if (Header.ChannelAssignment == ChannelAssignment.RightSide)
+                else if (Header.ChannelAssignment == FlacChannelAssignment.RightSide)
                     bps += 1 - c;
 
                 var subframe = FlacSubFrameBase.GetSubFrame(_reader, _data[c], Header, bps);
@@ -126,21 +126,21 @@ namespace NAudio.Flac
 
         private unsafe void SamplesToBytes(List<FlacSubFrameData> data)
         {
-            if (Header.ChannelAssignment == ChannelAssignment.LeftSide)
+            if (Header.ChannelAssignment == FlacChannelAssignment.LeftSide)
             {
                 for (int i = 0; i < Header.BlockSize; i++)
                 {
                     data[1].DestBuffer[i] = data[0].DestBuffer[i] - data[1].DestBuffer[i];
                 }
             }
-            else if (Header.ChannelAssignment == ChannelAssignment.RightSide)
+            else if (Header.ChannelAssignment == FlacChannelAssignment.RightSide)
             {
                 for (int i = 0; i < Header.BlockSize; i++)
                 {
                     data[0].DestBuffer[i] += data[1].DestBuffer[i];
                 }
             }
-            else if (Header.ChannelAssignment == ChannelAssignment.MidSide)
+            else if (Header.ChannelAssignment == FlacChannelAssignment.MidSide)
             {
                 for (int i = 0; i < Header.BlockSize; i++)
                 {

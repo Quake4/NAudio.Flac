@@ -15,7 +15,7 @@ namespace NAudio.Flac
 
         public int Channels { get; set; }
 
-        public ChannelAssignment ChannelAssignment { get; set; }
+        public FlacChannelAssignment ChannelAssignment { get; set; }
 
         public int BitsPerSample { get; set; }
 
@@ -157,18 +157,19 @@ namespace NAudio.Flac
                 if ((x & 8) != 0)
                 {
                     channels = 2;
-                    if ((x & 7) > 2 || (x & 7) < 0)
+                    x = x & 7;
+                    if (x > 2 || x < 0)
                     {
                         Error("Invalid ChannelAssignment", loggerLocation);
                         return false;
                     }
                     else
-                        ChannelAssignment = (ChannelAssignment)((x & 7) + 1);
+                        ChannelAssignment = (FlacChannelAssignment)(x + 1);
                 }
                 else
                 {
                     channels = x + 1;
-                    ChannelAssignment = ChannelAssignment.Independent;
+                    ChannelAssignment = FlacChannelAssignment.Independent;
                 }
                 Channels = channels;
 

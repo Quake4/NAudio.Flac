@@ -1,6 +1,6 @@
 ﻿namespace NAudio.Flac
 {
-    public enum ChannelAssignment
+    public enum FlacChannelAssignment
     {
         Independent = 0,
         LeftSide = 1,
