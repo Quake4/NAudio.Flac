@@ -8,6 +8,7 @@ namespace NAudio.Flac
         public const int Verbatim = 0x01;
         public const int FixedMask = 0x08;
         public const int LPCMask = 0x20;
+        public const int ReservedMask = 0x10;
 
         public bool HasError { get; protected set; }
 
@@ -47,19 +48,24 @@ namespace NAudio.Flac
             {
                 subFrame = new FlacSubFrameLPC(reader, header, data, bps, (int)((x & (LPCMask - 1)) + 1));
             }
+            else if ((x & ReservedMask) > 0)
+            {
+                Debug.WriteLine($"Reserved Flac-SubframeType: {x}.");
+                return null;
+            }
             else if ((x & FixedMask) > 0)
             {
                 var order = (int)(x & (FixedMask - 1));
                 if (order > 4)
                 {
-                    Debug.WriteLine("Invalid FlacFixedSubFrame predictororder: method = " + order + ".");
+                    Debug.WriteLine($"Reserved FlacFixedSubFrame predictororder: {order}.");
                     return null;
                 }
                 subFrame = new FlacSubFrameFixed(reader, header, data, bps, order);
             }
             else
             {
-                Debug.WriteLine("Invalid Flac-SubframeType: x = " + x + ".");
+                Debug.WriteLine($"Invalid Flac-SubframeType: {x}.");
                 return null;
             }
 
