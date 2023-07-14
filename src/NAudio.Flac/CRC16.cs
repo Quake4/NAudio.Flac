@@ -16,34 +16,34 @@ namespace NAudio.Flac
 	///     crc, including the sync code
 	/// </summary>
 	internal class CRC16 : CRCBase<ushort>
-    {
-        private static CRC16 _instance;
+	{
+		private static CRC16 _instance;
 
-        public CRC16()
-        {
-            CalcTable(16);
-        }
+		public CRC16()
+		{
+			CalcTable(16);
+		}
 
-        public static CRC16 Instance
-        {
-            get { return _instance ?? (_instance = new CRC16()); }
-        }
+		public static CRC16 Instance
+		{
+			get { return _instance ?? (_instance = new CRC16()); }
+		}
 
-        public override ushort CalcCheckSum(byte[] buffer, int offset, int count)
-        {
-            int crc = 0;
-            for (int i = offset; i < offset + count; i++)
+		public override ushort CalcCheckSum(byte[] buffer, int offset, int count)
+		{
+			int crc = 0;
+			for (int i = offset; i < offset + count; i++)
 				crc = ((crc << 8) ^ crc_table[(crc >> 8) ^ buffer[i]]) & 0xffff;
 			return (ushort)crc;
-        }
+		}
 
-        public unsafe ushort CalcCheckSum(byte* buffer, int count)
-        {
-            int crc = 0;
+		public unsafe ushort CalcCheckSum(byte* buffer, int count)
+		{
+			int crc = 0;
 			byte* ptr = buffer;
-            for (int i = 0; i < count; i++)
+			for (int i = 0; i < count; i++)
 				crc = ((crc << 8) ^ crc_table[(crc >> 8) ^ *(ptr++)]) & 0xffff;
-            return (ushort)crc;
-        }
-    }
+			return (ushort)crc;
+		}
+	}
 }
