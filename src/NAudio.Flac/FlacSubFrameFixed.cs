@@ -21,7 +21,7 @@
         }
 
         //http://www.hpl.hp.com/techreports/1999/HPL-1999-144.pdf
-        private unsafe bool RestoreSignal(FlacSubFrameData subframeData, int length, int predictorOrder)
+        private unsafe void RestoreSignal(FlacSubFrameData subframeData, int length, int predictorOrder)
         {
             int* residual = subframeData.ResidualBuffer + predictorOrder;
             int* data = subframeData.DestBuffer + predictorOrder;
@@ -73,14 +73,11 @@
                     break;
 
                 default:
-                    System.Diagnostics.Debug.WriteLine("Invalid FlacFixedSubFrame predictororder.");
-                    return false;
+                    throw new FlacException($"Invalid FlacFixedSubFrame predictororder: {predictorOrder}.", FlacLayer.SubFrame);
             }
-
-            return true;
         }
 
-		private unsafe bool RestoreSignalWide(FlacSubFrameData subframeData, int length, int predictorOrder)
+		private unsafe void RestoreSignalWide(FlacSubFrameData subframeData, int length, int predictorOrder)
 		{
 			int* residual = subframeData.ResidualBuffer + predictorOrder;
 			int* data = subframeData.DestBuffer + predictorOrder;
@@ -142,11 +139,8 @@
 					break;
 
 				default:
-					System.Diagnostics.Debug.WriteLine("Invalid FlacFixedSubFrame predictororder.");
-					return false;
+					throw new FlacException($"Invalid FlacFixedSubFrame predictororder: {predictorOrder}.", FlacLayer.SubFrame);
 			}
-
-			return true;
 		}
 	}
 }

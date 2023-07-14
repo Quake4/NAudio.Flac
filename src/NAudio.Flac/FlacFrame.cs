@@ -58,7 +58,13 @@ namespace NAudio.Flac
 					if (!HasError)
 					{
 						_reader.SeekBytes(Header.Length);
-						ReadSubFrames();
+
+						if (ReadSubFrames() != _streamInfo.Channels)
+						{
+							HasError = true;
+							_stream.Position = frameStartPosition;
+							return;
+						}
 
 						var crc = CRC16.Instance.CalcCheckSum(ptrBuffer, _reader.Position);
 						if (crc != 0) //data + crc = 0
@@ -86,7 +92,7 @@ namespace NAudio.Flac
 			_reader = null;
 		}
 
-        private unsafe void ReadSubFrames()
+        private unsafe int ReadSubFrames()
         {
             List<FlacSubFrameBase> subFrames = new List<FlacSubFrameBase>();
 
@@ -114,6 +120,8 @@ namespace NAudio.Flac
 
             _reader.Flush();
             Crc16 = _reader.ReadUInt16();
+
+            return subFrames.Count;
         }
 
         private unsafe void SamplesToBytes(List<FlacSubFrameData> data)

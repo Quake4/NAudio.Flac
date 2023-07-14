@@ -4,6 +4,11 @@ namespace NAudio.Flac
 {
     public class FlacSubFrameBase
     {
+        public const int Constant = 0x00;
+        public const int Verbatim = 0x01;
+        public const int FixedMask = 0x08;
+        public const int LPCMask = 0x20;
+
         public unsafe static FlacSubFrameBase GetSubFrame(FlacBitReader reader, FlacSubFrameData data, FlacFrameHeader header, int bps)
         {
             int wastedBits = 0;
@@ -28,25 +33,27 @@ namespace NAudio.Flac
 
             FlacSubFrameBase subFrame;
 
-            if (x == 0)
+            if (x == Constant)
             {
-                //constant
                 subFrame = new FlacSubFrameConstant(reader, header, data, bps);
             }
-            else if (x == 1)
+            else if (x == Verbatim)
             {
-                //verbatim
                 subFrame = new FlacSubFrameVerbatim(reader, header, data, bps);
             }
-            else if ((x & 0x20) > 0)
+            else if ((x & LPCMask) > 0)
             {
-                //lpc
-                subFrame = new FlacSubFrameLPC(reader, header, data, bps, (int)((x & 31) + 1));
+                subFrame = new FlacSubFrameLPC(reader, header, data, bps, (int)((x & (LPCMask - 1)) + 1));
             }
-            else if ((x & 0x08) > 0)
+            else if ((x & FixedMask) > 0)
             {
-                //fixed
-                subFrame = new FlacSubFrameFixed(reader, header, data, bps, (int)(x & 7));
+                var order = (int)(x & (FixedMask - 1));
+                if (order > 4)
+                {
+                    Debug.WriteLine("Invalid FlacFixedSubFrame predictororder: method = " + order + ".");
+                    return null;
+                }
+                subFrame = new FlacSubFrameFixed(reader, header, data, bps, order);
             }
             else
             {
@@ -63,12 +70,8 @@ namespace NAudio.Flac
                 }
             }
 
-            subFrame.WastedBits = wastedBits;
-
             return subFrame;
         }
-
-        public int WastedBits { get; protected set; }
 
         public FlacFrameHeader Header { get; protected set; }
 
