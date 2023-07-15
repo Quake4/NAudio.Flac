@@ -83,6 +83,8 @@ namespace NAudio.Flac
 				catch
 				{
 					_stream.Position = frameStartPosition;
+					//HasError = true;
+					throw;
 				}
 				finally
 				{

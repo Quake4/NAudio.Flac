@@ -68,7 +68,7 @@ namespace NAudio.Flac
                 }
                 else
                 {
-                    //uint mask = (1u << riceParameter) - 1;
+                    uint mask = (1u << riceParameter) - 1;
                     for (int i = 0; i < nvals; i++)
                     {
                         uint bits = putable[reader.Cache >> 24];
@@ -81,22 +81,21 @@ namespace NAudio.Flac
                             msbs += bits;
                         }
 
-                        // bits | stop bit | riceParameter bits | next data bits
+                        // bits | stop bit | riceParameter bits | next data bits | BitOffset (no data bits 0 - 7, see PeekCache)
 
-                        uint uval = 0;
-                        // no any speed up
-                        /*int btsk = riceParameter + (int)bits + 1;
-                        if (riceParameter <= 32 - btsk)
+                        uint uval = msbs << riceParameter;
+                        int btsk = riceParameter + (int)bits + 1;
+                        if (btsk <= 32 - reader.BitOffset)
                         {
                             // optimized code - one call of seekbits
-                            uval = (msbs << riceParameter) | ((reader.Cache >> (32 - btsk)) & mask);
+                            uval |= (reader.Cache >> (32 - btsk)) & mask;
                             reader.SeekBits(btsk);
                         }
-                        else*/
+                        else
                         {
                             // sign bit/s outside cache value - or readable code
                             reader.SeekBits((int)bits + 1);
-                            uval = (msbs << riceParameter) | (reader.Cache >> (32 - riceParameter));
+                            uval |= reader.Cache >> (32 - riceParameter);
                             reader.SeekBits(riceParameter);
                         }
                         *(ptrDest++) = (int)(uval >> 1 ^ -(int)(uval & 1));

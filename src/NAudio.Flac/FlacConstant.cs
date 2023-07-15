@@ -25,8 +25,6 @@
         };
 
         public const int FrameHeaderSize = 16;
-        public const int MaxFixedOrder = 4;
-        public const int MaxLpcOrder = 32;
 
         public const int SubframeLpcQlpCoeffPrecisionLen = 4;
 

@@ -49,6 +49,11 @@ namespace NAudio.Flac
             get { return _cache; }
         }
 
+        protected internal int BitOffset
+        {
+            get { return _bitoffset; }
+        }
+
         public byte* Buffer
         {
             get { return _storedBuffer; }
@@ -67,15 +72,12 @@ namespace NAudio.Flac
 
         private uint PeekCache()
         {
-            unchecked
-            {
-                byte* ptr = _buffer;
-                uint result = *(ptr++);
-                result = result << 8 | *(ptr++);
-                result = result << 8 | *(ptr++);
-                result = result << 8 | *(ptr++);
-                return result << _bitoffset;
-            }
+            byte* ptr = _buffer;
+            uint result = *(ptr++);
+            result = (result << 8) | *(ptr++);
+            result = (result << 8) | *(ptr++);
+            result = (result << 8) | *(ptr++);
+            return result << _bitoffset;
         }
 
         public void SeekBytes(int bytes)
