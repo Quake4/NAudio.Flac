@@ -16,8 +16,6 @@ namespace NAudio.Flac
 
         public unsafe bool ProcessResidual(FlacBitReader reader, FlacFrameHeader header, FlacSubFrameData data, int order)
         {
-            //data.Content.UpdateSize(PartitionOrder);
-
             int porder = PartitionOrder;
             FlacEntropyCoding codingMethod = CodingMethod;
 
@@ -37,7 +35,7 @@ namespace NAudio.Flac
                 if (p == 1) resCnt = psize;
                 int n = Math.Min(resCnt, header.BlockSize - j);
 
-                int k = /*data.Content.Parameters[p] =*/ (int)reader.ReadBits(ricelength);
+                int k = (int)reader.ReadBits(ricelength);
                 if (k == (1 << ricelength) - 1)
                 {
                     k = (int)reader.ReadBits(5);
