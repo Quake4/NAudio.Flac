@@ -167,8 +167,11 @@ namespace NAudio.Flac
                                     if (frames.Count > 0)
                                     {
                                         var last = frames.Last();
-                                        if (last.Header.NumberType != frameInfo.Header.NumberType)
-                                            continue;
+										if (last.Header.NumberType != frameInfo.Header.NumberType)
+										{
+											ptr = ptrSafe;
+											continue;
+										}
                                         if (frameInfo.Header.NumberType == FlacNumberType.FrameNumber && last.Header.FrameNumber + 1 != header.FrameNumber)
                                         {
                                             Debug.WriteLine($"Sequence frame missmatch: previous {last.Header.FrameNumber}, current {header.FrameNumber}");
