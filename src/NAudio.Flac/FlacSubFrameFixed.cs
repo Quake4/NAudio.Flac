@@ -17,7 +17,7 @@
             if (bps + order <= 32)
                 RestoreSignal(data, header.BlockSize - order, order);
             else
-                RestoreSignalWide(data, header.BlockSize - order, order, bps == 32);
+                RestoreSignalWide(data, header.BlockSize - order, order);
         }
 
         //http://www.hpl.hp.com/techreports/1999/HPL-1999-144.pdf
@@ -77,7 +77,7 @@
             }
         }
 
-		private unsafe void RestoreSignalWide(FlacSubFrameData subframeData, int length, int predictorOrder, bool overflowCheck)
+		private unsafe void RestoreSignalWide(FlacSubFrameData subframeData, int length, int predictorOrder)
 		{
 			int* residual = subframeData.ResidualBuffer + predictorOrder;
 			int* data = subframeData.DestBuffer + predictorOrder;
@@ -97,7 +97,7 @@
 					for (int i = 0; i < length; i++)
 					{
 						sum = *(residual++) + (long)data[-1];
-						if (overflowCheck && (sum > int.MaxValue || sum < int.MinValue))
+						if (sum > int.MaxValue || sum < int.MinValue)
 							throw new FlacException($"Overflow restore signal (repack flac file with fixed flac encoder): {int.MinValue} <= {sum} <= {int.MaxValue} ", FlacLayer.SubFrame);
 						*(data++) = (int)sum;
 					}
@@ -107,7 +107,7 @@
 					for (int i = 0; i < length; i++)
 					{
 						sum = *(residual++) + ((long)data[-1] << 1) - data[-2];
-						if (overflowCheck && (sum > int.MaxValue || sum < int.MinValue))
+						if (sum > int.MaxValue || sum < int.MinValue)
 							throw new FlacException($"Overflow restore signal (repack flac file with fixed flac encoder): {int.MinValue} <= {sum} <= {int.MaxValue} ", FlacLayer.SubFrame);
 						*(data++) = (int)sum;
 					}
@@ -119,7 +119,7 @@
 						sum = *(residual++) +
 									((((long)data[-1] - data[-2]) << 1) + ((long)data[-1] - data[-2])) +
 									data[-3];
-						if (overflowCheck && (sum > int.MaxValue || sum < int.MinValue))
+						if (sum > int.MaxValue || sum < int.MinValue)
 							throw new FlacException($"Overflow restore signal (repack flac file with fixed flac encoder): {int.MinValue} <= {sum} <= {int.MaxValue} ", FlacLayer.SubFrame);
 						*(data++) = (int)sum;
 					}
@@ -132,7 +132,7 @@
 									(((long)data[-1] + data[-3]) << 2) -
 									(((long)data[-2] << 2) + ((long)data[-2] << 1)) -
 									data[-4];
-						if (overflowCheck && (sum > int.MaxValue || sum < int.MinValue))
+						if (sum > int.MaxValue || sum < int.MinValue)
 							throw new FlacException($"Overflow restore signal (repack flac file with fixed flac encoder): {int.MinValue} <= {sum} <= {int.MaxValue} ", FlacLayer.SubFrame);
 						*(data++) = (int)sum;
 					}

@@ -53,7 +53,7 @@
             if (bps <= 16)
                 RestoreLPCSignal(data.ResidualBuffer + order, data.DestBuffer + order, header.BlockSize - order, order);
             else
-                RestoreLPCSignalWide(data.ResidualBuffer + order, data.DestBuffer + order, header.BlockSize - order, order, bps == 32);
+                RestoreLPCSignalWide(data.ResidualBuffer + order, data.DestBuffer + order, header.BlockSize - order, order);
         }
 
         private unsafe void RestoreLPCSignal(int* residual, int* destination, int length, int order)
@@ -75,7 +75,7 @@
             }
         }
 
-        private unsafe void RestoreLPCSignalWide(int* residual, int* destination, int length, int order, bool overflowCheck)
+        private unsafe void RestoreLPCSignalWide(int* residual, int* destination, int length, int order)
         {
             int* r = residual;
             int* history;
@@ -91,7 +91,7 @@
                 }
 
                 var result = *(r++) + (sum >> _lpcShiftNeeded);
-                if (overflowCheck && (result > int.MaxValue || result < int.MinValue))
+                if (result > int.MaxValue || result < int.MinValue)
                     throw new FlacException($"Overflow restore lpc signal (repack flac file with fixed flac encoder): {int.MinValue} <= {result} <= {int.MaxValue} ", FlacLayer.SubFrame);
 
                 *(dest++) = (int)(result);
