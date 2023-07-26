@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 
-// ReSharper disable once CheckNamespace
 namespace NAudio.Flac
 {
     public class FlacMetadataSeekTable : FlacMetadata
@@ -12,14 +11,20 @@ namespace NAudio.Flac
             : base(FlacMetaDataType.Seektable, lastBlock, length)
         {
             int entryCount = length / 18;
-            EntryCount = entryCount;
             seekPoints = new FlacSeekPoint[entryCount];
             BinaryReader reader = new BinaryReader(stream);
             try
             {
                 for (int i = 0; i < entryCount; i++)
                 {
-                    seekPoints[i] = new FlacSeekPoint(reader.ReadInt64(), reader.ReadInt64(), reader.ReadInt16());
+                    var bytes = reader.ReadBytes(8);
+                    Array.Reverse(bytes);
+                    var number = BitConverter.ToUInt64(bytes, 0);
+                    bytes = reader.ReadBytes(8);
+                    Array.Reverse(bytes);
+                    var offset = BitConverter.ToUInt64(bytes, 0);
+
+                    seekPoints[i] = new FlacSeekPoint(number, offset, reader.ReadUInt16());
                 }
             }
             catch (IOException e)
@@ -28,9 +33,7 @@ namespace NAudio.Flac
             }
         }
 
-        public int EntryCount { get; private set; }
-
-        public FlacSeekPoint[] SeekPoints { get; private set; }
+        public FlacSeekPoint[] SeekPoints => seekPoints;
 
         public FlacSeekPoint this[int index]
         {

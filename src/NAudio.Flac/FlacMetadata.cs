@@ -19,18 +19,12 @@ namespace NAudio.Flac
 
             fixed (byte* headerBytes = b)
             {
-                FlacBitReader bitReader = new FlacBitReader(headerBytes, 0);
-
-                lastBlock = bitReader.ReadBits(1) == 1;
-                type = (FlacMetaDataType)bitReader.ReadBits(7);
-                length = (int)bitReader.ReadBits(24);
-                ////1000 0000
-                //if (((b[0] & 0x80) >> 7) == 1)
-                //    lastBlock = true;
-                //type = (FlacMetaDataType)(b[0] & 0x7F);
-                //int length = (b[1] + (b[2] << 8) + (b[3] << 16));
-
-                bitReader.Dispose();
+                using (var bitReader = new FlacBitReader(headerBytes, 0))
+                {
+                    lastBlock = bitReader.ReadBits(1) == 1;
+                    type = (FlacMetaDataType)bitReader.ReadBits(7);
+                    length = (int)bitReader.ReadBits(24);
+                }
             }
 
             FlacMetadata data;

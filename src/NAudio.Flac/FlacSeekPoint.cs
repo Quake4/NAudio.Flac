@@ -2,17 +2,17 @@
 {
     public class FlacSeekPoint
     {
-        public long Number { get; private set; }
+        public ulong Number { get; private set; }
 
-        public long Offset { get; private set; }
+        public ulong Offset { get; private set; }
 
-        public int FrameSize { get; private set; }
+        public ushort FrameSize { get; private set; }
 
         public FlacSeekPoint()
         {
         }
 
-        public FlacSeekPoint(long number, long offset, int frameSize)
+        public FlacSeekPoint(ulong number, ulong offset, ushort frameSize)
         {
             Number = number;
             Offset = offset;
