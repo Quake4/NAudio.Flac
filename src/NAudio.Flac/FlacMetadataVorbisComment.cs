@@ -49,7 +49,8 @@ namespace NAudio.Flac
 					var pos = p.IndexOf('=');
 					return new KeyValuePair<string, string>(p.Substring(0, pos), p.Substring(pos + 1));
 				})
-				.ToDictionary(x => x.Key, x => x.Value);
+				.GroupBy(p => p.Key)
+				.ToDictionary(x => x.Key, x => x.First().Value);
 			}
 		}
 
