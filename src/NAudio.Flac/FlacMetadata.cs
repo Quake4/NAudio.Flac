@@ -42,6 +42,10 @@ namespace NAudio.Flac
                     data = new FlacMetadataSeekTable(stream, length, lastBlock);
                     break;
 
+                case FlacMetaDataType.VorbisComment:
+                    data = new FlacMetadataVorbisComment(stream, length, lastBlock);
+                    break;
+
                 default:
                     data = new FlacMetadata(type, lastBlock, length);
                     break;
