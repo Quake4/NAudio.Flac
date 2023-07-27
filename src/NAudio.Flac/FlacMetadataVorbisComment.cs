@@ -9,7 +9,6 @@ with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 */
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,7 +18,7 @@ namespace NAudio.Flac
 {
 	public class FlacMetadataVorbisComment : FlacMetadata
 	{
-		private readonly string[] comments;
+		private readonly IDictionary<string, string> comments;
 		private readonly string vendor;
 
 		public FlacMetadataVorbisComment(Stream stream, Int32 length, bool lastBlock)
@@ -28,10 +27,10 @@ namespace NAudio.Flac
 			var comm = new HashSet<string>();
 			try
 			{
-				var position = stream.Position;
 				BinaryReader reader = new BinaryReader(stream);
 				var bytes = reader.ReadBytes((int)reader.ReadUInt32());
 				vendor = Encoding.UTF8.GetString(bytes);
+				
 				var count = reader.ReadUInt32();
 				while (count-- > 0)
 				{
@@ -45,18 +44,24 @@ namespace NAudio.Flac
 			}
 			finally
 			{
-				comments = comm.ToArray();
+				comments = comm.Select(p =>
+				{
+					var pos = p.IndexOf('=');
+					return new KeyValuePair<string, string>(p.Substring(0, pos), p.Substring(pos + 1));
+				})
+				.ToDictionary(x => x.Key, x => x.Value);
 			}
 		}
 
 		public string Vendor => vendor;
-		public string[] Comments => comments;
 
-		public string this[int index]
+		public IDictionary<string, string> Comments => comments;
+
+		public string this[string key]
 		{
 			get
 			{
-				return comments[index];
+				return comments[key];
 			}
 		}
 	}
