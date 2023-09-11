@@ -103,7 +103,7 @@
                     if (result > int.MaxValue || result < int.MinValue)
                         throw new FlacException($"Overflow restore lpc signal (repack flac file with fixed flac encoder): {int.MinValue} <= {result} <= {int.MaxValue} ", FlacLayer.SubFrame);
 
-                    *(dest++) = (int)(result);
+                    *(dest++) = (int)result;
                 }
             }
         }
