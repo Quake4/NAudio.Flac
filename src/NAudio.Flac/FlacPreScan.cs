@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace NAudio.Flac
@@ -214,6 +215,7 @@ namespace NAudio.Flac
             return frames;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe bool IsFrame(byte* buffer, FlacMetadataStreamInfo streamInfo, FlacFrameHeader baseHeader, out FlacFrameHeader header)
         {
             header = new FlacFrameHeader(buffer, streamInfo, true, false);

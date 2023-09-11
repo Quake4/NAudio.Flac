@@ -61,17 +61,22 @@
             int* r = residual;
             int* history;
             int* dest = destination;
+            int* ptrCoeff;
+            int sum;
 
-            for (int i = 0; i < length; i++)
+            fixed (int* coeff = _qlpCoeffs)
             {
-                int sum = 0;
-                history = dest;
-                for (int j = 0; j < order; j++)
+                for (int i = 0; i < length; i++)
                 {
-                    sum += _qlpCoeffs[j] * *(--history);
-                }
+                    sum = 0;
+                    history = dest;
+                    ptrCoeff = coeff;
 
-                *(dest++) = *(r++) + (sum >> _lpcShiftNeeded);
+                    for (int j = 0; j < order; j++)
+                        sum += *ptrCoeff++ * *(--history);
+
+                    *(dest++) = *(r++) + (sum >> _lpcShiftNeeded);
+                }
             }
         }
 
@@ -80,21 +85,26 @@
             int* r = residual;
             int* history;
             int* dest = destination;
+            int* ptrCoeff;
+            long sum;
 
-            for (int i = 0; i < length; i++)
+            fixed (int* coeff = _qlpCoeffs)
             {
-                long sum = 0;
-                history = dest;
-                for (int j = 0; j < order; j++)
+                for (int i = 0; i < length; i++)
                 {
-                    sum += (long)_qlpCoeffs[j] * *(--history);
+                    sum = 0;
+                    history = dest;
+                    ptrCoeff = coeff;
+
+                    for (int j = 0; j < order; j++)
+                        sum += (long)*ptrCoeff++ * *(--history);
+
+                    var result = *(r++) + (sum >> _lpcShiftNeeded);
+                    if (result > int.MaxValue || result < int.MinValue)
+                        throw new FlacException($"Overflow restore lpc signal (repack flac file with fixed flac encoder): {int.MinValue} <= {result} <= {int.MaxValue} ", FlacLayer.SubFrame);
+
+                    *(dest++) = (int)(result);
                 }
-
-                var result = *(r++) + (sum >> _lpcShiftNeeded);
-                if (result > int.MaxValue || result < int.MinValue)
-                    throw new FlacException($"Overflow restore lpc signal (repack flac file with fixed flac encoder): {int.MinValue} <= {result} <= {int.MaxValue} ", FlacLayer.SubFrame);
-
-                *(dest++) = (int)(result);
             }
         }
     }
