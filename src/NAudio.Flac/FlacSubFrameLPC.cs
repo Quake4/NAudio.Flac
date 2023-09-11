@@ -58,7 +58,6 @@
 
         private unsafe void RestoreLPCSignal(int* residual, int* destination, int length, int order)
         {
-            int* r = residual;
             int* history;
             int* dest = destination;
             int* ptrCoeff;
@@ -75,14 +74,13 @@
                     for (int j = 0; j < order; j++)
                         sum += *ptrCoeff++ * *(--history);
 
-                    *(dest++) = *(r++) + (sum >> _lpcShiftNeeded);
+                    *(dest++) = *residual++ + (sum >> _lpcShiftNeeded);
                 }
             }
         }
 
         private unsafe void RestoreLPCSignalWide(int* residual, int* destination, int length, int order)
         {
-            int* r = residual;
             int* history;
             int* dest = destination;
             int* ptrCoeff;
@@ -99,7 +97,7 @@
                     for (int j = 0; j < order; j++)
                         sum += (long)*ptrCoeff++ * *(--history);
 
-                    var result = *(r++) + (sum >> _lpcShiftNeeded);
+                    var result = *residual++ + (sum >> _lpcShiftNeeded);
                     if (result > int.MaxValue || result < int.MinValue)
                         throw new FlacException($"Overflow restore lpc signal (repack flac file with fixed flac encoder): {int.MinValue} <= {result} <= {int.MaxValue} ", FlacLayer.SubFrame);
 
