@@ -133,7 +133,7 @@ namespace NAudio.Flac
                     throw new FlacException("No StreamInfo-Metadata found.", FlacLayer.Metadata);
 
                 _streamInfo = streamInfo;
-                _waveFormat = new WaveFormat(streamInfo.SampleRate, streamInfo.BitsPerSample == 20 ? 24 : streamInfo.BitsPerSample, streamInfo.Channels);
+                _waveFormat = new WaveFormat(streamInfo.SampleRate, streamInfo.BitsPerSample, streamInfo.Channels);
                 Debug.WriteLine("Flac StreamInfo found -> WaveFormat: " + _waveFormat);
                 Debug.WriteLine("Flac-File-Metadata read.");
             }
