@@ -39,8 +39,8 @@ namespace NAudio.Flac
             return !HasError;
         }
 
-        private unsafe void Decode()
-        {
+		private unsafe void Decode()
+		{
 			if (_buffer == null || _buffer.Length < _streamInfo.MaxFrameSize)
 				_buffer = new byte[_streamInfo.MaxFrameSize];
 
@@ -191,7 +191,7 @@ namespace NAudio.Flac
                     }
                     return (int)((byte*)ptr - ptrBuffer);
                 }
-                else if (Header.BitsPerSample == 24)
+                else if (Header.BitsPerSample == 24 || Header.BitsPerSample == 20)
                 {
                     byte* ptr = ptrBuffer;
                     for (int i = 0; i < Header.BlockSize; i++)
@@ -199,6 +199,7 @@ namespace NAudio.Flac
                         for (int c = 0; c < Header.Channels; c++)
                         {
                             int val = (_data[c].DestBuffer[i]);
+                            val <<= (24 - Header.BitsPerSample);
                             *(ptr++) = (byte)(val & 0xFF);
                             *(ptr++) = (byte)((val >> 8) & 0xFF);
                             *(ptr++) = (byte)((val >> 16) & 0xFF);
