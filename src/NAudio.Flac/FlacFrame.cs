@@ -179,14 +179,16 @@ namespace NAudio.Flac
                     }
                     return (int)(ptr - ptrBuffer);
                 }
-                else if (Header.BitsPerSample == 16)
+                else if (Header.BitsPerSample == 12 || Header.BitsPerSample == 16)
                 {
                     short* ptr = (short*)ptrBuffer;
                     for (int i = 0; i < Header.BlockSize; i++)
                     {
                         for (int c = 0; c < Header.Channels; c++)
                         {
-                            *(ptr++) = (short)(_data[c].DestBuffer[i]);
+                            int val = _data[c].DestBuffer[i];
+                            val <<= (16 - Header.BitsPerSample);
+                            *(ptr++) = (short)val;
                         }
                     }
                     return (int)((byte*)ptr - ptrBuffer);
