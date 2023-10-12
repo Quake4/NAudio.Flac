@@ -167,6 +167,7 @@ namespace NAudio.Flac
 
             fixed (byte* ptrBuffer = buffer)
             {
+                if (Header.BitsPerSample < 8) ;
                 if (Header.BitsPerSample == 8)
                 {
                     byte* ptr = ptrBuffer;
@@ -179,29 +180,31 @@ namespace NAudio.Flac
                     }
                     return (int)(ptr - ptrBuffer);
                 }
-                else if (Header.BitsPerSample == 12 || Header.BitsPerSample == 16)
+                else if (Header.BitsPerSample <= 16)
                 {
+                    var shift = 16 - Header.BitsPerSample;
                     short* ptr = (short*)ptrBuffer;
                     for (int i = 0; i < Header.BlockSize; i++)
                     {
                         for (int c = 0; c < Header.Channels; c++)
                         {
                             int val = _data[c].DestBuffer[i];
-                            val <<= (16 - Header.BitsPerSample);
+                            val <<= shift;
                             *(ptr++) = (short)val;
                         }
                     }
                     return (int)((byte*)ptr - ptrBuffer);
                 }
-                else if (Header.BitsPerSample == 24 || Header.BitsPerSample == 20)
+                else if (Header.BitsPerSample <= 24)
                 {
+                    var shift = 24 - Header.BitsPerSample;
                     byte* ptr = ptrBuffer;
                     for (int i = 0; i < Header.BlockSize; i++)
                     {
                         for (int c = 0; c < Header.Channels; c++)
                         {
-                            int val = (_data[c].DestBuffer[i]);
-                            val <<= (24 - Header.BitsPerSample);
+                            int val = _data[c].DestBuffer[i];
+                            val <<= shift;
                             *(ptr++) = (byte)(val & 0xFF);
                             *(ptr++) = (byte)((val >> 8) & 0xFF);
                             *(ptr++) = (byte)((val >> 16) & 0xFF);
@@ -209,24 +212,24 @@ namespace NAudio.Flac
                     }
                     return (int)(ptr - ptrBuffer);
                 }
-                else if (Header.BitsPerSample == 32)
+                else if (Header.BitsPerSample <= 32)
                 {
+                    var shift = 32 - Header.BitsPerSample;
                     int* ptr = (int*)ptrBuffer;
                     for (int i = 0; i < Header.BlockSize; i++)
                     {
                         for (int c = 0; c < Header.Channels; c++)
                         {
-                            *(ptr++) = (_data[c].DestBuffer[i]);
+                            int val = _data[c].DestBuffer[i];
+                            val <<= shift;
+                            *(ptr++) = val;
                         }
                     }
                     return (int)((byte*)ptr - ptrBuffer);
                 }
-                else
-                {
-                    string error = "FlacFrame::GetBuffer: Invalid Flac-BitsPerSample: " + Header.BitsPerSample + ".";
-                    Debug.WriteLine(error);
-                    throw new FlacException(error, FlacLayer.Frame);
-                }
+                string error = "FlacFrame::GetBuffer: Invalid Flac-BitsPerSample: " + Header.BitsPerSample + ".";
+                Debug.WriteLine(error);
+                throw new FlacException(error, FlacLayer.Frame);
             }
         }
 
