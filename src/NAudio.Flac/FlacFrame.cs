@@ -167,7 +167,7 @@ namespace NAudio.Flac
 
             fixed (byte* ptrBuffer = buffer)
             {
-                if (Header.BitsPerSample < 8) ;
+				if (Header.BitsPerSample < 8) { };
                 if (Header.BitsPerSample == 8)
                 {
                     byte* ptr = ptrBuffer;

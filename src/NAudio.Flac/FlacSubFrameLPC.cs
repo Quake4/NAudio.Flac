@@ -6,14 +6,6 @@
         private readonly int _lpcShiftNeeded;
         private readonly int _qlpCoeffPrecision;
 
-        public int QLPCoeffPrecision { get { return _qlpCoeffPrecision; } }
-
-        public int LPCShiftNeeded { get { return _lpcShiftNeeded; } }
-
-        public int[] QLPCoeffs { get { return _qlpCoeffs; } }
-
-        public FlacResidual Residual { get; private set; }
-
         public unsafe FlacSubFrameLPC(FlacBitReader reader, FlacFrameHeader header, FlacSubFrameData data, int bps, int order)
             : base(header)
         {
@@ -48,7 +40,8 @@
                 _qlpCoeffs[i] = reader.ReadBitsSigned(_qlpCoeffPrecision);
             }
 
-            Residual = new FlacResidual(reader, header, data, order);
+            // decode resudal
+            new FlacResidual(reader, header, data, order);
 
             if (bps <= 16)
                 RestoreLPCSignal(data.ResidualBuffer + order, data.DestBuffer + order, header.BlockSize - order, order);

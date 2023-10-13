@@ -7,14 +7,9 @@
         {
             unsafe
             {
-                int* ptrDest = data.DestBuffer, ptrResidual = data.ResidualBuffer;
-
+                int* ptrDest = data.DestBuffer;
                 for (int i = 0; i < header.BlockSize; i++)
-                {
-                    int x = (int)reader.ReadBits(bps);
-                    *ptrDest++ = x;
-                    *ptrResidual++ = x;
-                }
+                    *ptrDest++ = (int)reader.ReadBits(bps);
             }
         }
     }

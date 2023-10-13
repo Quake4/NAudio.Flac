@@ -2,12 +2,6 @@
 {
     public class FlacResidual
     {
-        public FlacEntropyCoding CodingMethod { get; private set; }
-
-        public int RiceOrder { get; private set; }
-
-        internal FlacPartitionedRice Rice { get; private set; }
-
         public FlacResidual(FlacBitReader reader, FlacFrameHeader header, FlacSubFrameData data, int order)
         {
             FlacEntropyCoding codingMethod = (FlacEntropyCoding)reader.ReadBits(FlacConstant.EntropyCodingMethodTypeLen); // 2 Bit
@@ -22,12 +16,6 @@
                 {
                     throw new FlacException("Decoding Flac Residual failed.", FlacLayer.SubFrame);
                 }
-
-#if DEBUG
-                CodingMethod = codingMethod;
-                RiceOrder = riceOrder;
-                Rice = rice;
-#endif
             }
             else
             {

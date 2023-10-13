@@ -4,32 +4,26 @@ namespace NAudio.Flac
 {
     public class FlacPartitionedRice
     {
-        public int PartitionOrder { get; private set; }
-
-        public FlacEntropyCoding CodingMethod { get; private set; }
+        private readonly int _partitionOrder;
+        private readonly FlacEntropyCoding _codingMethod;
 
         public FlacPartitionedRice(int partitionOrder, FlacEntropyCoding codingMethod)
         {
-            PartitionOrder = partitionOrder;
-            CodingMethod = codingMethod;
+            _partitionOrder = partitionOrder;
+            _codingMethod = codingMethod;
         }
 
         public unsafe bool ProcessResidual(FlacBitReader reader, FlacFrameHeader header, FlacSubFrameData data, int order)
         {
-            int porder = PartitionOrder;
-            FlacEntropyCoding codingMethod = CodingMethod;
-
-            int psize = header.BlockSize >> porder;
+            int psize = header.BlockSize >> _partitionOrder;
             int resCnt = psize - order;
-
-            int ricelength = 4 + (int)codingMethod; //4bit = RICE I | 5bit = RICE II
+            int ricelength = 4 + (int)_codingMethod; //4bit = RICE I | 5bit = RICE II
 
             //residual
             int j = order;
             int* r = data.ResidualBuffer + j;
 
-            int partitioncount = 1 << porder;
-
+            int partitioncount = 1 << _partitionOrder;
             for (int p = 0; p < partitioncount; p++)
             {
                 if (p == 1) resCnt = psize;

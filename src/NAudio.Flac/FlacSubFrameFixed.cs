@@ -2,8 +2,6 @@
 {
     public sealed class FlacSubFrameFixed : FlacSubFrameBase
     {
-        public FlacResidual Residual { get; private set; }
-
         public unsafe FlacSubFrameFixed(FlacBitReader reader, FlacFrameHeader header, FlacSubFrameData data, int bps, int order)
             : base(header)
         {
@@ -12,7 +10,8 @@
                 data.ResidualBuffer[i] = data.DestBuffer[i] = reader.ReadBitsSigned(bps);
             }
 
-            Residual = new FlacResidual(reader, header, data, order); //necessary for decoding
+            // resudal decoding
+            new FlacResidual(reader, header, data, order);
 
             if (bps + order <= 32)
                 RestoreSignal(data, header.BlockSize - order, order);

@@ -16,6 +16,7 @@ namespace NAudio.Flac
     public class FlacReader : WaveStream, IDisposable, IWaveProvider
     {
         private readonly Stream _stream;
+        private readonly WaveFormat _sourceWaveFormat;
         private readonly WaveFormat _waveFormat;
         private readonly FlacMetadataStreamInfo _streamInfo;
         private FlacPreScan _scan;
@@ -36,6 +37,11 @@ namespace NAudio.Flac
         ///     Gets a list with all found metadata fields.
         /// </summary>
         public List<FlacMetadata> Metadata { get; protected set; }
+
+        public WaveFormat SourceWaveFormat
+        {
+            get { return _sourceWaveFormat; }
+        }
 
         /// <summary>
         ///     Gets the output <see cref="WaveFormat" /> of the decoder.
@@ -133,7 +139,8 @@ namespace NAudio.Flac
                     throw new FlacException("No StreamInfo-Metadata found.", FlacLayer.Metadata);
 
                 _streamInfo = streamInfo;
-                _waveFormat = new WaveFormat(streamInfo.SampleRate, streamInfo.BitsPerSample, streamInfo.Channels);
+                _sourceWaveFormat = new WaveFormat(streamInfo.SampleRate, streamInfo.BitsPerSample, streamInfo.Channels);
+                _waveFormat = new WaveFormat(streamInfo.SampleRate, (streamInfo.BitsPerSample + 7) / 8 * 8, streamInfo.Channels);
                 Debug.WriteLine("Flac StreamInfo found -> WaveFormat: " + _waveFormat);
                 Debug.WriteLine("Flac-File-Metadata read.");
             }
