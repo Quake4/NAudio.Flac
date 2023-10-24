@@ -109,7 +109,7 @@ namespace NAudio.Flac
             if (bits <= 0 || bits > 32)
                 throw new ArgumentOutOfRangeException("bits", "bits has to be a value between 1 and 32");
 
-            uint result = _cache >> 32 - bits;
+            uint result = _cache >> (32 - bits);
             if (bits <= 24)
             {
                 SeekBits(bits);
@@ -117,7 +117,7 @@ namespace NAudio.Flac
             }
 
             SeekBits(24);
-            result |= _cache >> 56 - bits;
+            result |= _cache >> (56 - bits);
             SeekBits(bits - 24);
 
             return result;
