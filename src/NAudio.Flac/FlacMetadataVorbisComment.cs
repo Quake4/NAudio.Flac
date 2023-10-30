@@ -51,7 +51,8 @@ namespace NAudio.Flac
 				})
 				.Where(p => !string.IsNullOrEmpty(p.Value))
 				.GroupBy(p => p.Key)
-				.ToDictionary(x => x.Key.ToUpper(), x => x.First().Value);
+				.Select(p => new KeyValuePair<string, string>(p.Key.ToUpper(), string.Join(", ", p.Select(t => t.Value).Distinct())))
+				.ToDictionary(x => x.Key, x => x.Value);
 			}
 		}
 
