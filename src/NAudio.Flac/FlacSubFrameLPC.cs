@@ -67,7 +67,7 @@
 
                     count = order;
                     // by four
-                    while (count > 4)
+                    while (count >= 4)
                     {
                         sum += *ptrCoeff++ * *(--history) +
                             *ptrCoeff++ * *(--history) +
@@ -102,7 +102,7 @@
 
                     count = order;
                     // by four
-                    while (count > 4)
+                    while (count >= 4)
                     {
                         sum += (long)*ptrCoeff++ * *(--history) +
                             (long)*ptrCoeff++ * *(--history) +
