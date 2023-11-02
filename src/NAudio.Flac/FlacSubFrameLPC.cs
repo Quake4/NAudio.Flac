@@ -55,6 +55,7 @@
             int* dest = destination;
             int* ptrCoeff;
             int sum;
+            int count;
 
             fixed (int* coeff = _qlpCoeffs)
             {
@@ -64,7 +65,18 @@
                     history = dest;
                     ptrCoeff = coeff;
 
-                    for (int j = 0; j < order; j++)
+                    count = order;
+                    // by four
+                    while (count > 4)
+                    {
+                        sum += *ptrCoeff++ * *(--history) +
+                            *ptrCoeff++ * *(--history) +
+                            *ptrCoeff++ * *(--history) +
+                            *ptrCoeff++ * *(--history);
+                        count -= 4;
+                    }
+                    // rest
+                    while (count-- > 0)
                         sum += *ptrCoeff++ * *(--history);
 
                     *(dest++) = *residual++ + (sum >> _lpcShiftNeeded);
@@ -78,6 +90,7 @@
             int* dest = destination;
             int* ptrCoeff;
             long sum;
+            int count;
 
             fixed (int* coeff = _qlpCoeffs)
             {
@@ -87,7 +100,18 @@
                     history = dest;
                     ptrCoeff = coeff;
 
-                    for (int j = 0; j < order; j++)
+                    count = order;
+                    // by four
+                    while (count > 4)
+                    {
+                        sum += (long)*ptrCoeff++ * *(--history) +
+                            (long)*ptrCoeff++ * *(--history) +
+                            (long)*ptrCoeff++ * *(--history) +
+                            (long)*ptrCoeff++ * *(--history);
+                        count -= 4;
+                    }
+                    // rest
+                    while (count-- > 0)
                         sum += (long)*ptrCoeff++ * *(--history);
 
                     var result = *residual++ + (sum >> _lpcShiftNeeded);
