@@ -70,14 +70,17 @@ namespace NAudio.Flac
             GC.SuppressFinalize(this);
         }
 
-        private uint PeekCache()
+        private uint PeekCache(bool loadRest = false)
         {
             byte* ptr = _buffer;
             uint result = *(ptr++);
             result = (result << 8) | *(ptr++);
             result = (result << 8) | *(ptr++);
             result = (result << 8) | *(ptr++);
-            return result << _bitoffset;
+			if (loadRest)
+				return (result << _bitoffset) | (uint)(*ptr >> (8 - _bitoffset));
+			else
+				return result << _bitoffset;
         }
 
         public void SeekBytes(int bytes)
@@ -88,9 +91,9 @@ namespace NAudio.Flac
             SeekBits(bytes * 8);
         }
 
-        public void SeekBits(int bits)
+        public void SeekBits(int bits, bool loadRest = false)
         {
-            if (bits <= 0)
+            if (bits < 0)
                 throw new ArgumentOutOfRangeException("bits");
 
             int tmp = _bitoffset + bits;
@@ -99,7 +102,7 @@ namespace NAudio.Flac
             _buffer += tmp3; //skip bytes
             _bitoffset = tmp & 7; //bitoverflow -> max 7 bit
 
-            _cache = PeekCache();
+            _cache = PeekCache(loadRest);
 
             _position += tmp3;
         }
