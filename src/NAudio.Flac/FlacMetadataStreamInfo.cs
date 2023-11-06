@@ -35,8 +35,8 @@ namespace NAudio.Flac
             if (MaxFrameSize == 0)
                 MaxFrameSize = (uint)(MaxBlockSize * Channels * BitsPerSample >> 3);
 #if !DEBUG
-            if (BitsPerSample > 24)
-                throw new FlacException("Flac decoder support only 24bit audio", FlacLayer.Metadata);
+            if (BitsPerSample > 32)
+                throw new FlacException("Flac decoder support only up to 32bit audio.", FlacLayer.Metadata);
 #endif
         }
 

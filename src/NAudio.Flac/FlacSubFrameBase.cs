@@ -74,10 +74,17 @@ namespace NAudio.Flac
 
             if (hasWastedBits)
             {
-                int* ptrDest = data.DestBuffer;
-                for (int i = 0; i < header.BlockSize; i++)
+                if (data.IsLong)
                 {
-                    *(ptrDest++) <<= wastedBits;
+                    long* ptrDest = data.DestBufferLong;
+                    for (int i = 0; i < header.BlockSize; i++)
+                        *(ptrDest++) <<= wastedBits;
+                }
+                else
+                {
+                    int* ptrDest = data.DestBuffer;
+                    for (int i = 0; i < header.BlockSize; i++)
+                        *(ptrDest++) <<= wastedBits;
                 }
             }
 

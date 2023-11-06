@@ -7,9 +7,18 @@
         {
             unsafe
             {
-                int* ptrDest = data.DestBuffer;
-                for (int i = 0; i < header.BlockSize; i++)
-                    *ptrDest++ = (int)reader.ReadBits(bps);
+                if (data.IsLong)
+                {
+                    long* ptrDest = data.DestBufferLong;
+                    for (int i = 0; i < header.BlockSize; i++)
+                        *ptrDest++ = reader.ReadBits64Signed(bps);
+                }
+                else
+                {
+                    int* ptrDest = data.DestBuffer;
+                    for (int i = 0; i < header.BlockSize; i++)
+                        *ptrDest++ = reader.ReadBitsSigned(bps);
+                }
             }
         }
     }

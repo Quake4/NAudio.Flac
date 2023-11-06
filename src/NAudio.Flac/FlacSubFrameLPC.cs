@@ -10,10 +10,16 @@
             : base(header)
         {
             //warmup
-            for (int i = 0; i < order; i++)
-            {
-                data.ResidualBuffer[i] = data.DestBuffer[i] = reader.ReadBitsSigned(bps);
-            }
+            if (data.IsLong)
+                for (int i = 0; i < order; i++)
+                {
+                    var value = reader.ReadBits64Signed(bps);
+                    data.DestBufferLong[i] = value;
+                    data.ResidualBuffer[i] = (int)value;
+                }
+            else
+                for (int i = 0; i < order; i++)
+                    data.ResidualBuffer[i] = data.DestBuffer[i] = reader.ReadBitsSigned(bps);
 
             //header
             _qlpCoeffPrecision = (int)reader.ReadBits(FlacConstant.SubframeLpcQlpCoeffPrecisionLen) + 1;
@@ -43,7 +49,9 @@
             // decode resudal
             new FlacResidual(reader, header, data, order);
 
-            if (bps <= 16)
+            if (data.IsLong)
+                RestoreLPCSignalLong(data.ResidualBuffer + order, data.DestBufferLong + order, header.BlockSize - order, order);
+            else if (bps <= 16)
                 RestoreLPCSignal(data.ResidualBuffer + order, data.DestBuffer + order, header.BlockSize - order, order);
             else
                 RestoreLPCSignalWide(data.ResidualBuffer + order, data.DestBuffer + order, header.BlockSize - order, order);
@@ -122,5 +130,40 @@
                 }
             }
         }
-    }
+
+		private unsafe void RestoreLPCSignalLong(int* residual, long* destination, int length, int order)
+		{
+			long* history;
+			long* dest = destination;
+			int* ptrCoeff;
+			long sum;
+			int count;
+
+			fixed (int* coeff = _qlpCoeffs)
+			{
+				for (int i = 0; i < length; i++)
+				{
+					sum = 0;
+					history = dest;
+					ptrCoeff = coeff;
+
+					count = order;
+					// by four
+					while (count >= 4)
+					{
+						sum += *ptrCoeff++ * *(--history) +
+							*ptrCoeff++ * *(--history) +
+							*ptrCoeff++ * *(--history) +
+							*ptrCoeff++ * *(--history);
+						count -= 4;
+					}
+					// rest
+					while (count-- > 0)
+						sum += *ptrCoeff++ * *(--history);
+
+					*(dest++) = *residual++ + (sum >> _lpcShiftNeeded);
+				}
+			}
+		}
+	}
 }

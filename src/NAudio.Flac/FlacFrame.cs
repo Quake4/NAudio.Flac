@@ -13,8 +13,10 @@ namespace NAudio.Flac
         private FlacMetadataStreamInfo _streamInfo;
         private FlacBitReader _reader;
 
-        private GCHandle _handle1, _handle2;
+        private GCHandle _handle1, _handle2, _handle3;
         private int[] _destBuffer;
+        private long[] _destBufferLong;
+        private bool _isLong;
         private int[] _residualBuffer;
         private byte[] _buffer;
 
@@ -98,14 +100,14 @@ namespace NAudio.Flac
         {
             List<FlacSubFrameBase> subFrames = new List<FlacSubFrameBase>();
 
+            _isLong = Header.BitsPerSample > 24 && Header.ChannelAssignment != FlacChannelAssignment.Independent;
+
             //alocateOutput
             _data = AllocOuputMemory();
 
             for (int c = 0; c < Header.Channels; c++)
             {
                 int bps = Header.BitsPerSample;
-                if (bps == 32 && Header.ChannelAssignment != FlacChannelAssignment.Independent)
-                    throw new FlacException("Only Independent channels must be in 32 bit!", FlacLayer.Frame);
 
                 if (Header.ChannelAssignment == FlacChannelAssignment.MidSide || Header.ChannelAssignment == FlacChannelAssignment.LeftSide)
                     bps += c;
@@ -128,32 +130,68 @@ namespace NAudio.Flac
 
         private unsafe void SamplesToBytes(List<FlacSubFrameData> data)
         {
+            if (Header.ChannelAssignment == FlacChannelAssignment.Independent && _isLong)
+            {
+                // optimize stereo
+                if (data.Count == 2)
+                    for (int i = 0; i < Header.BlockSize; i++)
+                    {
+                        data[0].DestBuffer[i] = (int)data[0].DestBufferLong[i];
+                        data[1].DestBuffer[i] = (int)data[1].DestBufferLong[i];
+                    }
+                else
+                    for (int c = 0; c < data.Count; c++)
+                        for (int i = 0; i < Header.BlockSize; i++)
+                            data[c].DestBuffer[i] = (int)data[c].DestBufferLong[i];
+            }
             if (Header.ChannelAssignment == FlacChannelAssignment.LeftSide)
             {
-                for (int i = 0; i < Header.BlockSize; i++)
-                {
-                    data[1].DestBuffer[i] = data[0].DestBuffer[i] - data[1].DestBuffer[i];
-                }
+                if (_isLong)
+                    for (int i = 0; i < Header.BlockSize; i++)
+                    {
+                        data[0].DestBuffer[i] = (int)data[0].DestBufferLong[i];
+                        data[1].DestBuffer[i] = (int)(data[0].DestBufferLong[i] - data[1].DestBufferLong[i]);
+                    }
+                else
+                    for (int i = 0; i < Header.BlockSize; i++)
+                        data[1].DestBuffer[i] = data[0].DestBuffer[i] - data[1].DestBuffer[i];
             }
             else if (Header.ChannelAssignment == FlacChannelAssignment.RightSide)
             {
-                for (int i = 0; i < Header.BlockSize; i++)
-                {
-                    data[0].DestBuffer[i] += data[1].DestBuffer[i];
-                }
+                if (_isLong)
+                    for (int i = 0; i < Header.BlockSize; i++)
+                    {
+                        data[0].DestBuffer[i] = (int)(data[0].DestBufferLong[i] + data[1].DestBufferLong[i]);
+                        data[1].DestBuffer[i] = (int)data[1].DestBufferLong[i];
+                    }
+                else
+                    for (int i = 0; i < Header.BlockSize; i++)
+                        data[0].DestBuffer[i] += data[1].DestBuffer[i];
             }
             else if (Header.ChannelAssignment == FlacChannelAssignment.MidSide)
             {
-                for (int i = 0; i < Header.BlockSize; i++)
-                {
-                    int mid = data[0].DestBuffer[i] << 1;
-                    int side = data[1].DestBuffer[i];
+                if (_isLong)
+                    for (int i = 0; i < Header.BlockSize; i++)
+                    {
+                        long mid = data[0].DestBufferLong[i] << 1;
+                        long side = data[1].DestBufferLong[i];
 
-                    mid |= (side & 1);
+                        mid |= (side & 1);
 
-                    data[0].DestBuffer[i] = (mid + side) >> 1;
-                    data[1].DestBuffer[i] = (mid - side) >> 1;
-                }
+                        data[0].DestBuffer[i] = (int)((mid + side) >> 1);
+                        data[1].DestBuffer[i] = (int)((mid - side) >> 1);
+                    }
+                else
+                    for (int i = 0; i < Header.BlockSize; i++)
+                    {
+                        int mid = data[0].DestBuffer[i] << 1;
+                        int side = data[1].DestBuffer[i];
+
+                        mid |= (side & 1);
+
+                        data[0].DestBuffer[i] = (mid + side) >> 1;
+                        data[1].DestBuffer[i] = (mid - side) >> 1;
+                    }
             }
         }
 
@@ -161,6 +199,9 @@ namespace NAudio.Flac
         {
             if (_destBuffer == null || _destBuffer.Length < (Header.Channels * Header.BlockSize))
                 _destBuffer = new int[Header.Channels * Header.BlockSize];
+            if (_isLong)
+                if (_destBufferLong == null || _destBufferLong.Length < (Header.Channels * Header.BlockSize))
+                    _destBufferLong = new long[Header.Channels * Header.BlockSize];
             if (_residualBuffer == null || _residualBuffer.Length < (Header.Channels * Header.BlockSize))
                 _residualBuffer = new int[Header.Channels * Header.BlockSize];
 
@@ -169,15 +210,19 @@ namespace NAudio.Flac
             for (int c = 0; c < Header.Channels; c++)
             {
                 fixed (int* ptrDestBuffer = _destBuffer, ptrResidualBuffer = _residualBuffer)
+                fixed (long* ptrDestBufferLong = _destBufferLong)
                 {
                     FreeBuffers();
                     _handle1 = GCHandle.Alloc(_destBuffer, GCHandleType.Pinned);
-                    _handle2 = GCHandle.Alloc(_residualBuffer, GCHandleType.Pinned);
+                    _handle2 = GCHandle.Alloc(_destBufferLong, GCHandleType.Pinned);
+                    _handle3 = GCHandle.Alloc(_residualBuffer, GCHandleType.Pinned);
 
                     FlacSubFrameData data = new FlacSubFrameData
                     {
                         DestBuffer = (ptrDestBuffer + c * Header.BlockSize),
-                        ResidualBuffer = (ptrResidualBuffer + c * Header.BlockSize)
+                        DestBufferLong = (ptrDestBufferLong + c * Header.BlockSize),
+                        ResidualBuffer = (ptrResidualBuffer + c * Header.BlockSize),
+                        IsLong = _isLong
                     };
                     output.Add(data);
                 }
@@ -192,6 +237,8 @@ namespace NAudio.Flac
                 _handle1.Free();
             if (_handle2.IsAllocated)
                 _handle2.Free();
+            if (_handle3.IsAllocated)
+                _handle3.Free();
         }
 
         ~FlacFrame()
