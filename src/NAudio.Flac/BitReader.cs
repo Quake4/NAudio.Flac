@@ -77,10 +77,10 @@ namespace NAudio.Flac
             result = (result << 8) | *(ptr++);
             result = (result << 8) | *(ptr++);
             result = (result << 8) | *(ptr++);
-			if (loadRest)
-				return (result << _bitoffset) | (uint)(*ptr >> (8 - _bitoffset));
-			else
-				return result << _bitoffset;
+            if (loadRest)
+                return (result << _bitoffset) | (uint)(*ptr >> (8 - _bitoffset));
+            else
+                return result << _bitoffset;
         }
 
         public void SeekBytes(int bytes)
