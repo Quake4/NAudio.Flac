@@ -17,7 +17,8 @@ namespace NAudio.Flac
         {
             int psize = header.BlockSize >> _partitionOrder;
             int resCnt = psize - order;
-            int ricelength = 4 + (int)_codingMethod; //4bit = RICE I | 5bit = RICE II
+            int riceLength = 4 + (int)_codingMethod; //4bit = RICE I | 5bit = RICE II
+            int riceMax = (1 << riceLength) - 1;
 
             //residual
             int j = order;
@@ -29,17 +30,21 @@ namespace NAudio.Flac
                 if (p == 1) resCnt = psize;
                 int n = Math.Min(resCnt, header.BlockSize - j);
 
-                int k = (int)reader.ReadBits(ricelength);
-                if (k == (1 << ricelength) - 1)
-                {
-                    k = (int)reader.ReadBits(5);
-                    for (int i = n; i > 0; i--)
-                        *(r++) = k == 0 ? 0 : reader.ReadBitsSigned(k);
-                }
-                else
+                int k = (int)reader.ReadBits(riceLength);
+                if (k < riceMax)
                 {
                     ReadFlacRiceBlock(reader, n, k, r);
                     r += n;
+                }
+                else
+                {
+                    k = (int)reader.ReadBits(5);
+                    if (k == 0)
+                        for (int i = n; i > 0; i--)
+                            *(r++) = 0;
+                    else
+                        for (int i = n; i > 0; i--)
+                            *(r++) = reader.ReadBitsSigned(k);
                 }
                 j += n;
             }
