@@ -66,7 +66,7 @@ namespace NAudio.Flac
                 else
                 {
                     uint mask = (1u << riceParameter) - 1;
-					reader.SeekBits(0, true);
+					reader.SeekBits(0, true); //load rest of 32bit value
 					for (int i = 0; i < nvals; i++)
                     {
                         uint bits = putable[reader.Cache >> 24];
