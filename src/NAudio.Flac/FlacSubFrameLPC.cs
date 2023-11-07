@@ -23,9 +23,9 @@
 
             //header
             _qlpCoeffPrecision = (int)reader.ReadBits(FlacConstant.SubframeLpcQlpCoeffPrecisionLen) + 1;
-            if (_qlpCoeffPrecision >= (1 << FlacConstant.SubframeLpcQlpCoeffPrecisionLen))
+            if (_qlpCoeffPrecision > FlacConstant.SubframeLpcQlpCoeffPrecisionMax)
             {
-                System.Diagnostics.Debug.WriteLine("Invalid FlacLPC qlp coeff precision: {_qlpCoeffPrecision}.");
+                System.Diagnostics.Debug.WriteLine($"Invalid FlacLPC qlp coeff precision: {_qlpCoeffPrecision}.");
                 HasError = true;
                 return;
             }
@@ -42,9 +42,7 @@
 
             //qlp coeffs
             for (int i = 0; i < order; i++)
-            {
                 _qlpCoeffs[i] = reader.ReadBitsSigned(_qlpCoeffPrecision);
-            }
 
             // decode resudal
             new FlacResidual(reader, header, data, order);

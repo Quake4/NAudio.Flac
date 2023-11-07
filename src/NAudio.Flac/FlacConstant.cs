@@ -28,6 +28,8 @@
 
         public const int SubframeLpcQlpCoeffPrecisionLen = 4;
 
+        public const int SubframeLpcQlpCoeffPrecisionMax = (1 << SubframeLpcQlpCoeffPrecisionLen) - 1;
+
         public const int SubframeLpcQlpShiftLen = 5;
 
         public const int EntropyCodingMethodTypeLen = 2;
