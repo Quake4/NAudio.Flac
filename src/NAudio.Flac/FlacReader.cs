@@ -158,12 +158,14 @@ namespace NAudio.Flac
                 };
 
                 _token = new CancellationTokenSource();
+                var token = _token.Token;
                 if (scanFlag == FlacPreScanMethodMode.Async)
                     ThreadPool.QueueUserWorkItem(o => {
                         try
                         {
                             Thread.CurrentThread.Priority = ThreadPriority.Lowest;
-                            _scan = scan.StartScan(_streamInfo, scanFlag, _token.Token);
+                            if (!token.IsCancellationRequested)
+                                _scan = scan.StartScan(_streamInfo, scanFlag, token);
                         }
                         finally
                         {
@@ -171,7 +173,7 @@ namespace NAudio.Flac
                         }
                     });
                 else
-                    _scan = scan.StartScan(_streamInfo, scanFlag, _token.Token);
+                    _scan = scan.StartScan(_streamInfo, scanFlag, token);
             }
         }
 
