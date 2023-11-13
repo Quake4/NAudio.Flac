@@ -259,19 +259,8 @@ namespace NAudio.Flac
         {
             get
             {
-                if (!CanSeek)
-                    return _position;
-
                 lock (_bufferLock)
-                {
-#if !DIAGNOSTICS
-                    if (_frameIndex >= _scan.Frames.Count)
-                        return Length;
-                    return _scan.Frames[_frameIndex].SampleOffset * WaveFormat.BlockAlign + _overflowOffset;
-#else
                     return _position;
-#endif
-                }
             }
             set
             {
@@ -279,20 +268,20 @@ namespace NAudio.Flac
                     return;
                 lock (_bufferLock)
                 {
+                    value = Math.Max(0, value);
+                    value += WaveFormat.BlockAlign - 1; // align to high
                     value = Math.Min(value, Length);
-                    value = value > 0 ? value : 0;
 
-                    for (int i = 0; i < _scan.Frames.Count; i++)
+                    var sample = value / WaveFormat.BlockAlign;
+                    for (int i = value < _position ? 0 : _frameIndex; i < _scan.Frames.Count; i++)
                     {
-                        if ((value / WaveFormat.BlockAlign) <= _scan.Frames[i].SampleOffset)
+                        if (sample <= _scan.Frames[i].SampleOffset)
                         {
                             _stream.Position = _scan.Frames[i].StreamOffset;
                             _frameIndex = i;
                             if (_stream.Position >= _stream.Length)
                                 throw new EndOfStreamException("Stream got EOF.");
-#if DIAGNOSTICS
                             _position = _scan.Frames[i].SampleOffset * WaveFormat.BlockAlign;
-#endif
                             _overflowCount = 0;
                             _overflowOffset = 0;
                             break;
