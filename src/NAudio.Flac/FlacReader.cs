@@ -275,13 +275,14 @@ namespace NAudio.Flac
                     var sample = value / WaveFormat.BlockAlign;
                     for (int i = value < _position ? 0 : _frameIndex; i < _scan.Frames.Count; i++)
                     {
-                        if (sample <= _scan.Frames[i].SampleOffset)
+                        var frame = _scan.Frames[i];
+                        if (sample <= frame.SampleOffset)
                         {
-                            _stream.Position = _scan.Frames[i].StreamOffset;
+                            _stream.Position = frame.StreamOffset;
                             _frameIndex = i;
                             if (_stream.Position >= _stream.Length)
                                 throw new EndOfStreamException("Stream got EOF.");
-                            _position = _scan.Frames[i].SampleOffset * WaveFormat.BlockAlign;
+                            _position = frame.SampleOffset * WaveFormat.BlockAlign;
                             _overflowCount = 0;
                             _overflowOffset = 0;
                             break;
