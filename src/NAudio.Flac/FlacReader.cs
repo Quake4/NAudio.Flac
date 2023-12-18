@@ -15,7 +15,7 @@ namespace NAudio.Flac
     /// </summary>
     public class FlacReader : WaveStream, IDisposable, IWaveProvider
     {
-        private readonly Stream _stream;
+        protected readonly Stream _stream;
         private readonly WaveFormat _sourceWaveFormat;
         private readonly WaveFormat _waveFormat;
         private readonly FlacMetadataStreamInfo _streamInfo;
@@ -24,6 +24,7 @@ namespace NAudio.Flac
         private readonly object _bufferLock = new object();
         private CancellationTokenSource _token;
         private long _position;
+        protected long _dataStartPosition;
 
         //overflow:
         private byte[] _overflowBuffer;
@@ -141,6 +142,7 @@ namespace NAudio.Flac
                 _streamInfo = streamInfo;
                 _sourceWaveFormat = new WaveFormat(streamInfo.SampleRate, streamInfo.BitsPerSample, streamInfo.Channels);
                 _waveFormat = new WaveFormat(streamInfo.SampleRate, (streamInfo.BitsPerSample + 7) / 8 * 8, streamInfo.Channels);
+                _dataStartPosition = stream.Position;
                 Debug.WriteLine("Flac StreamInfo found -> WaveFormat: " + _waveFormat);
                 Debug.WriteLine("Flac-File-Metadata read.");
             }
