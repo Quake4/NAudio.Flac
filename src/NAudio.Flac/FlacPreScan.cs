@@ -144,8 +144,8 @@ namespace NAudio.Flac
                 fixed (byte* bufferPtr = buffer)
                 {
                     byte* ptr = bufferPtr;
-                    //for (int i = 0; i < read - FlacConstant.FrameHeaderSize; i++)
-                    while ((bufferPtr + read - FlacConstant.FrameHeaderSize) > ptr && !token.IsCancellationRequested)
+					//for (int i = 0; i < read - FlacConstant.FrameHeaderSize; i++)
+					while ((bufferPtr + read - 16) > ptr && !token.IsCancellationRequested)
                     {
                         if (*ptr++ == 0xFF && (*ptr & 0xFE) == 0xF8) //check sync
                         {
