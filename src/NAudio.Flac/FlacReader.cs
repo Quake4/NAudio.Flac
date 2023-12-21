@@ -138,9 +138,9 @@ namespace NAudio.Flac
                     metadata.First(x => x.MetaDataType == FlacMetaDataType.StreamInfo) as FlacMetadataStreamInfo;
                 if (streamInfo == null)
                     throw new FlacException("No StreamInfo-Metadata found.", FlacLayer.Metadata);
-
+#if DEBUG
                 _seekTable = metadata.FirstOrDefault(x => x.MetaDataType == FlacMetaDataType.Seektable) as FlacMetadataSeekTable;
-
+#endif
                 _streamInfo = streamInfo;
                 _sourceWaveFormat = new WaveFormat(streamInfo.SampleRate, streamInfo.BitsPerSample, streamInfo.Channels);
                 _waveFormat = new WaveFormat(streamInfo.SampleRate, (streamInfo.BitsPerSample + 7) / 8 * 8, streamInfo.Channels);
@@ -309,7 +309,6 @@ namespace NAudio.Flac
                                     index = prevIndex;
 
                                 _stream.Position = _dataStartPosition + (long)index.Offset;
-                                _frameIndex = i;
                                 if (_stream.Position >= _stream.Length - 16)
                                     throw new EndOfStreamException("Stream got EOF.");
                                 _position = (long)index.Number * WaveFormat.BlockAlign;

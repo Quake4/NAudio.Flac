@@ -138,14 +138,16 @@ namespace NAudio.Flac
             while (!token.IsCancellationRequested)
             {
                 read = stream.Read(buffer, 0, buffer.Length);
-                if (read <= FlacConstant.FrameHeaderSize)
+
+                var readminusheader = read - FlacConstant.FrameHeaderSize;
+                if (readminusheader <= 0)
                     break;
 
                 fixed (byte* bufferPtr = buffer)
                 {
                     byte* ptr = bufferPtr;
-					//for (int i = 0; i < read - FlacConstant.FrameHeaderSize; i++)
-					while ((bufferPtr + read - 16) > ptr && !token.IsCancellationRequested)
+                    //for (int i = 0; i < readminusheader; i++)
+                    while ((bufferPtr + readminusheader) > ptr && !token.IsCancellationRequested)
                     {
                         if (*ptr++ == 0xFF && (*ptr & 0xFE) == 0xF8) //check sync
                         {
@@ -168,11 +170,11 @@ namespace NAudio.Flac
                                     if (frames.Count > 0)
                                     {
                                         var last = frames.Last();
-										if (last.Header.NumberType != frameInfo.Header.NumberType)
-										{
-											ptr = ptrSafe;
-											continue;
-										}
+                                        if (last.Header.NumberType != frameInfo.Header.NumberType)
+                                        {
+                                            ptr = ptrSafe;
+                                            continue;
+                                        }
                                         if (frameInfo.Header.NumberType == FlacNumberType.FrameNumber && last.Header.FrameNumber + 1 != header.FrameNumber)
                                         {
                                             Debug.WriteLine($"Sequence frame missmatch: previous {last.Header.FrameNumber}, current {header.FrameNumber}");
