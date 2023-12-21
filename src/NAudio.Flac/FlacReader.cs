@@ -19,6 +19,7 @@ namespace NAudio.Flac
         private readonly WaveFormat _sourceWaveFormat;
         private readonly WaveFormat _waveFormat;
         private readonly FlacMetadataStreamInfo _streamInfo;
+        private readonly FlacMetadataSeekTable _seekTable;
         private FlacPreScan _scan;
 
         private readonly object _bufferLock = new object();
@@ -58,7 +59,7 @@ namespace NAudio.Flac
         /// </summary>
         public override bool CanSeek
         {
-            get { return _scan != null; }
+            get { return _seekTable != null || _scan != null; }
         }
 
         private FlacFrame _frame;
@@ -116,7 +117,6 @@ namespace NAudio.Flac
             _stream = stream;
 
             //skip ID3v2
-            //NAudio.Flac.ID3v2.SkipTag(stream);
             Id3v2Tag.ReadTag(stream);
 
             //read fLaC sync
@@ -139,6 +139,8 @@ namespace NAudio.Flac
                 if (streamInfo == null)
                     throw new FlacException("No StreamInfo-Metadata found.", FlacLayer.Metadata);
 
+                _seekTable = metadata.FirstOrDefault(x => x.MetaDataType == FlacMetaDataType.Seektable) as FlacMetadataSeekTable;
+
                 _streamInfo = streamInfo;
                 _sourceWaveFormat = new WaveFormat(streamInfo.SampleRate, streamInfo.BitsPerSample, streamInfo.Channels);
                 _waveFormat = new WaveFormat(streamInfo.SampleRate, (streamInfo.BitsPerSample + 7) / 8 * 8, streamInfo.Channels);
@@ -150,7 +152,7 @@ namespace NAudio.Flac
                 throw new FlacException("Invalid Flac-File. \"fLaC\" Sync not found.", FlacLayer.Top);
 
             //prescan stream
-            if (scanFlag != FlacPreScanMethodMode.None)
+            if (_seekTable == null && scanFlag != FlacPreScanMethodMode.None)
             {
                 var scan = new FlacPreScan(stream);
                 scan.ScanFinished += (s, e) =>
@@ -270,24 +272,52 @@ namespace NAudio.Flac
                     return;
                 lock (_bufferLock)
                 {
+                    bool next = value > _position;
+                    
                     value = Math.Max(0, value);
                     value += WaveFormat.BlockAlign - 1; // align to high
                     value = Math.Min(value, Length);
 
                     var sample = value / WaveFormat.BlockAlign;
-                    for (int i = value < _position ? 0 : _frameIndex; i < _scan.Frames.Count; i++)
+                    if (_scan != null) // by scan
                     {
-                        var frame = _scan.Frames[i];
-                        if (sample <= frame.SampleOffset)
+                        for (int i = value < _position ? 0 : _frameIndex; i < _scan.Frames.Count; i++)
                         {
-                            _stream.Position = frame.StreamOffset;
-                            _frameIndex = i;
-                            if (_stream.Position >= _stream.Length)
-                                throw new EndOfStreamException("Stream got EOF.");
-                            _position = frame.SampleOffset * WaveFormat.BlockAlign;
-                            _overflowCount = 0;
-                            _overflowOffset = 0;
-                            break;
+                            var frame = _scan.Frames[i];
+                            if (sample <= frame.SampleOffset)
+                            {
+                                _stream.Position = frame.StreamOffset;
+                                _frameIndex = i;
+                                if (_stream.Position >= _stream.Length - 16)
+                                    throw new EndOfStreamException("Stream got EOF.");
+                                _position = frame.SampleOffset * WaveFormat.BlockAlign;
+                                _overflowCount = 0;
+                                _overflowOffset = 0;
+                                break;
+                            }
+                        }
+                    }
+                    else // by _seektable
+                    {
+                        FlacSeekPoint prevIndex = null;
+                        for (int i = 0; i < _seekTable.SeekPoints.Length; i++)
+                        {
+                            FlacSeekPoint index = _seekTable.SeekPoints[i];
+                            if ((ulong)sample <= index.Number)
+                            {
+                                if (!next && prevIndex != null)
+                                    index = prevIndex;
+
+                                _stream.Position = _dataStartPosition + (long)index.Offset;
+                                _frameIndex = i;
+                                if (_stream.Position >= _stream.Length - 16)
+                                    throw new EndOfStreamException("Stream got EOF.");
+                                _position = (long)index.Number * WaveFormat.BlockAlign;
+                                _overflowCount = 0;
+                                _overflowOffset = 0;
+                                break;
+                            }
+                            prevIndex = index;
                         }
                     }
                 }
@@ -299,7 +329,7 @@ namespace NAudio.Flac
         /// </summary>
         public override long Length
         {
-            get { return (CanSeek ? _scan.TotalSamples : _streamInfo.TotalSamples) * WaveFormat.BlockAlign; }
+            get { return (_scan != null ? _scan.TotalSamples : _streamInfo.TotalSamples) * WaveFormat.BlockAlign; }
         }
 
         /// <summary>
