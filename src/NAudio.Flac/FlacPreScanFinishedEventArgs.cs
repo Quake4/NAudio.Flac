@@ -11,13 +11,13 @@ namespace NAudio.Flac
         /// <summary>
         /// Gets the a list of found frames by the scan.
         /// </summary>
-        public List<FlacFrameInformation> Frames { get; private set; }
+        public FlacFrameInformation[] Frames { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FlacPreScanFinishedEventArgs"/> class.
         /// </summary>
         /// <param name="frames">Found frames.</param>
-        public FlacPreScanFinishedEventArgs(List<FlacFrameInformation> frames)
+        public FlacPreScanFinishedEventArgs(FlacFrameInformation[] frames)
         {
             Frames = frames;
         }

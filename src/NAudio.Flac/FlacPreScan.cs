@@ -16,7 +16,7 @@ namespace NAudio.Flac
 
         public event EventHandler<FlacPreScanFinishedEventArgs> ScanFinished;
 
-        public List<FlacFrameInformation> Frames { get; private set; }
+        public FlacFrameInformation[] Frames { get; private set; }
 
         public long TotalLength { get; private set; }
 
@@ -93,7 +93,7 @@ namespace NAudio.Flac
             TotalSamples = totalSamples;
         }
 
-        private List<FlacFrameInformation> RunScan(FlacMetadataStreamInfo streamInfo, Stream stream, CancellationToken token)
+        private FlacFrameInformation[] RunScan(FlacMetadataStreamInfo streamInfo, Stream stream, CancellationToken token)
         {
 #if DEBUG
             Stopwatch watch = new Stopwatch();
@@ -109,13 +109,13 @@ namespace NAudio.Flac
             return result;
         }
 
-        private void RaiseScanFinished(List<FlacFrameInformation> frames)
+        private void RaiseScanFinished(FlacFrameInformation[] frames)
         {
             if (ScanFinished != null)
                 ScanFinished(this, new FlacPreScanFinishedEventArgs(frames));
         }
 
-        private unsafe List<FlacFrameInformation> ScanThisShit(FlacMetadataStreamInfo streamInfo, Stream stream, CancellationToken token)
+        public unsafe FlacFrameInformation[] ScanThisShit(FlacMetadataStreamInfo streamInfo, Stream stream, CancellationToken token, int? tillSampleOffset = null)
         {
             //if (!(stream is BufferedStream))
             //    stream = new BufferedStream(stream);
@@ -123,13 +123,13 @@ namespace NAudio.Flac
             byte[] buffer = new byte[BufferSize];
             int read = 0;
 
-            if (stream.Position <= (4 + streamInfo.Length))
+            if (stream.Position <= (4 + streamInfo.Length) && !tillSampleOffset.HasValue)
             {
                 stream.Position = 4; //fLaC
                 FlacMetadata.ReadAllMetadataFromStream(stream);
             }
 
-            List<FlacFrameInformation> frames = new List<FlacFrameInformation>();
+            List<FlacFrameInformation> frames = new List<FlacFrameInformation>(4096);
             FlacFrameInformation frameInfo = new FlacFrameInformation();
             frameInfo.IsFirstFrame = true;
 
@@ -189,7 +189,10 @@ namespace NAudio.Flac
                                         }
                                     }
 
-                                    frames.Add(frameInfo);
+                                    if (!tillSampleOffset.HasValue)
+                                        frames.Add(frameInfo);
+                                    else if (frameInfo.SampleOffset >= tillSampleOffset.Value)
+                                        return new FlacFrameInformation[] { frameInfo };
 
                                     frameInfo.SampleOffset += header.BlockSize;
                                     var newPtr = (ptrSafe - 1) + streamInfo.MinFrameSize;
@@ -214,7 +217,7 @@ namespace NAudio.Flac
                 stream.Position -= FlacConstant.FrameHeaderSize;
             }
 
-            return frames;
+            return frames.ToArray();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
