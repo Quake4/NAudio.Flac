@@ -205,7 +205,7 @@ namespace NAudio.Flac
                 }
 
                 //reader.SkipBits(4 * 8); //erste 3 bytes headerbytes überspringen, da diese schon ohne reader verarbeitet
-                reader.ReadBits(32);
+                reader.SeekBits(32);
 
                 //BYTE 4
 
