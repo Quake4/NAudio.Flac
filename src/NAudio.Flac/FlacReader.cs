@@ -25,7 +25,7 @@ namespace NAudio.Flac
         private readonly object _bufferLock = new object();
         private CancellationTokenSource _token;
         private long _position;
-        protected long _dataStartPosition;
+        protected readonly long _dataStartPosition;
 
         //overflow:
         private byte[] _overflowBuffer;

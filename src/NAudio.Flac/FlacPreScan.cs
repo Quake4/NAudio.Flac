@@ -10,7 +10,7 @@ namespace NAudio.Flac
 {
     public sealed class FlacPreScan
     {
-        private const int BufferSize = 524288;
+        private const int BufferSize = 0x80000;
         private readonly Stream _stream;
         private bool _isRunning;
 

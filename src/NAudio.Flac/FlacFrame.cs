@@ -8,7 +8,7 @@ namespace NAudio.Flac
 {
     public sealed partial class FlacFrame
     {
-        private List<FlacSubFrameData> _data;
+        private FlacSubFrameData[] _data;
         private Stream _stream;
         private FlacMetadataStreamInfo _streamInfo;
         private FlacBitReader _reader;
@@ -128,19 +128,19 @@ namespace NAudio.Flac
             return subFrames.Count;
         }
 
-        private unsafe void SamplesToBytes(List<FlacSubFrameData> data)
+        private unsafe void SamplesToBytes(FlacSubFrameData[] data)
         {
             if (Header.ChannelAssignment == FlacChannelAssignment.Independent && _isLong)
             {
                 // optimize stereo
-                if (data.Count == 2)
+                if (data.Length == 2)
                     for (int i = 0; i < Header.BlockSize; i++)
                     {
                         data[0].DestBuffer[i] = (int)data[0].DestBufferLong[i];
                         data[1].DestBuffer[i] = (int)data[1].DestBufferLong[i];
                     }
                 else
-                    for (int c = 0; c < data.Count; c++)
+                    for (int c = 0; c < data.Length; c++)
                         for (int i = 0; i < Header.BlockSize; i++)
                             data[c].DestBuffer[i] = (int)data[c].DestBufferLong[i];
             }
@@ -195,36 +195,41 @@ namespace NAudio.Flac
             }
         }
 
-        private unsafe List<FlacSubFrameData> AllocOuputMemory()
+        private unsafe FlacSubFrameData[] AllocOuputMemory()
         {
-            if (_destBuffer == null || _destBuffer.Length < (Header.Channels * Header.BlockSize))
-                _destBuffer = new int[Header.Channels * Header.BlockSize];
+            FreeBuffers();
+
+            var channels = Header.Channels;
+            var length = channels * Header.BlockSize;
+
+            if (_destBuffer == null || _destBuffer.Length < length)
+                _destBuffer = new int[length];
             if (_isLong)
-                if (_destBufferLong == null || _destBufferLong.Length < (Header.Channels * Header.BlockSize))
-                    _destBufferLong = new long[Header.Channels * Header.BlockSize];
-            if (_residualBuffer == null || _residualBuffer.Length < (Header.Channels * Header.BlockSize))
-                _residualBuffer = new int[Header.Channels * Header.BlockSize];
+                if (_destBufferLong == null || _destBufferLong.Length < length)
+                    _destBufferLong = new long[length];
+            if (_residualBuffer == null || _residualBuffer.Length < length)
+                _residualBuffer = new int[length];
 
-            List<FlacSubFrameData> output = new List<FlacSubFrameData>();
+            _handle1 = GCHandle.Alloc(_destBuffer, GCHandleType.Pinned);
+            _handle2 = GCHandle.Alloc(_destBufferLong, GCHandleType.Pinned);
+            _handle3 = GCHandle.Alloc(_residualBuffer, GCHandleType.Pinned);
 
-            for (int c = 0; c < Header.Channels; c++)
+            var output = new FlacSubFrameData[channels];
+
+            fixed (int* ptrDestBuffer = _destBuffer, ptrResidualBuffer = _residualBuffer)
+            fixed (long* ptrDestBufferLong = _destBufferLong)
             {
-                fixed (int* ptrDestBuffer = _destBuffer, ptrResidualBuffer = _residualBuffer)
-                fixed (long* ptrDestBufferLong = _destBufferLong)
+                for (int c = 0; c < channels; c++)
                 {
-                    FreeBuffers();
-                    _handle1 = GCHandle.Alloc(_destBuffer, GCHandleType.Pinned);
-                    _handle2 = GCHandle.Alloc(_destBufferLong, GCHandleType.Pinned);
-                    _handle3 = GCHandle.Alloc(_residualBuffer, GCHandleType.Pinned);
-
+                    var offset = c * Header.BlockSize;
                     FlacSubFrameData data = new FlacSubFrameData
                     {
-                        DestBuffer = (ptrDestBuffer + c * Header.BlockSize),
-                        DestBufferLong = (ptrDestBufferLong + c * Header.BlockSize),
-                        ResidualBuffer = (ptrResidualBuffer + c * Header.BlockSize),
+                        DestBuffer = ptrDestBuffer + offset,
+                        DestBufferLong = ptrDestBufferLong + offset,
+                        ResidualBuffer = ptrResidualBuffer + offset,
                         IsLong = _isLong
                     };
-                    output.Add(data);
+                    output[c] = data;
                 }
             }
 
