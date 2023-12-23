@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -43,7 +44,13 @@ namespace NAudio.Flac
             {
                 if (method == FlacPreScanMethodMode.Async)
                 {
-                    var stream = File.OpenRead((_stream as FileStream).Name);
+                    var filename = (_stream as FileStream)?.Name;
+                    if (filename == null)
+                    {
+                        var type = _stream.GetType().GetProperty("Name", BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.Instance);
+                        filename = (string)type.GetValue(_stream);
+                    }
+                    var stream = File.OpenRead(filename);
                     stream.Position = _stream.Position;
                     ScanStream(streamInfo, stream, token);
                     stream.Dispose();
