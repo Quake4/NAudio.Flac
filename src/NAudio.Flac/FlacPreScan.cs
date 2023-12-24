@@ -50,10 +50,11 @@ namespace NAudio.Flac
                         var type = _stream.GetType().GetProperty("Name", BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.Instance);
                         filename = (string)type.GetValue(_stream);
                     }
-                    var stream = File.OpenRead(filename);
-                    stream.Position = _stream.Position;
-                    ScanStream(streamInfo, stream, token);
-                    stream.Dispose();
+                    using (var stream = File.OpenRead(filename))
+                    {
+                        stream.Position = _stream.Position;
+                        ScanStream(streamInfo, stream, token);
+                    }
                 }
                 else
                 {
