@@ -329,6 +329,11 @@ namespace NAudio.Flac
                                         throw new EndOfStreamException("Stream got EOF.");
                                     _position = ((long)index.Number + frame.SampleOffset) * WaveFormat.BlockAlign;
                                 }
+                                else
+                                {
+                                    _stream.Position = _dataStartPosition + (long)index.Offset;
+                                    _position = (long)index.Number * WaveFormat.BlockAlign;
+                                }
                                 _overflowCount = 0;
                                 _overflowOffset = 0;
                                 break;
