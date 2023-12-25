@@ -11,7 +11,7 @@ namespace NAudio.Flac
 {
     public sealed class FlacPreScan
     {
-        private const int BufferSize = 0x80000;
+        private const int BufferSize = 0x20000;
         private readonly Stream _stream;
         private bool _isRunning;
 
@@ -50,7 +50,7 @@ namespace NAudio.Flac
                         var type = _stream.GetType().GetProperty("Name", BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.Instance);
                         filename = (string)type.GetValue(_stream);
                     }
-                    using (var stream = File.OpenRead(filename))
+                    using (var stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, 0x1000, FileOptions.SequentialScan))
                     {
                         stream.Position = _stream.Position;
                         ScanStream(streamInfo, stream, token);
@@ -139,8 +139,6 @@ namespace NAudio.Flac
 
             List<FlacFrameInformation> frames = new List<FlacFrameInformation>(4096);
             FlacFrameInformation frameInfo = new FlacFrameInformation();
-            frameInfo.IsFirstFrame = true;
-
             FlacFrameHeader baseHeader = null;
 
             while (!token.IsCancellationRequested)
@@ -155,7 +153,7 @@ namespace NAudio.Flac
                 {
                     byte* ptr = bufferPtr;
                     //for (int i = 0; i < readminusheader; i++)
-                    while ((bufferPtr + readminusheader) > ptr && !token.IsCancellationRequested)
+                    while (ptr < (bufferPtr + readminusheader) && !token.IsCancellationRequested)
                     {
                         if (*ptr++ == 0xFF && (*ptr & 0xFE) == 0xF8) //check sync
                         {
@@ -164,12 +162,7 @@ namespace NAudio.Flac
                             FlacFrameHeader header = null;
                             if (IsFrame(ptr, streamInfo, baseHeader, out header))
                             {
-                                if (frameInfo.IsFirstFrame)
-                                {
-                                    baseHeader = header;
-                                    frameInfo.IsFirstFrame = false;
-                                }
-
+                                baseHeader = baseHeader ?? header;
                                 if (baseHeader.CompareTo(header))
                                 {
                                     frameInfo.StreamOffset = stream.Position - read + ((ptrSafe - 1) - bufferPtr);

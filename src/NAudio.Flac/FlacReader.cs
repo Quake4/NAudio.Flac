@@ -153,8 +153,17 @@ namespace NAudio.Flac
 
             //prescan stream
             if (_seekPoints == null && scanFlag != FlacPreScanMethodMode.None)
+                Scan(onscanFinished, scanFlag);
+        }
+
+        public void Scan(Action<FlacPreScanFinishedEventArgs> onscanFinished = null, FlacPreScanMethodMode scanFlag = FlacPreScanMethodMode.Async)
+        {
+            // no rescan
+            if (_token != null) return;
+
+            if (scanFlag != FlacPreScanMethodMode.None)
             {
-                var scan = new FlacPreScan(stream);
+                var scan = new FlacPreScan(_stream);
                 scan.ScanFinished += (s, e) =>
                 {
                     if (onscanFinished != null)
