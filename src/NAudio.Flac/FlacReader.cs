@@ -174,16 +174,9 @@ namespace NAudio.Flac
                 var token = _token.Token;
                 if (scanFlag == FlacPreScanMethodMode.Async)
                     ThreadPool.QueueUserWorkItem(o => {
-                        try
-                        {
-                            Thread.CurrentThread.Priority = ThreadPriority.Lowest;
-                            if (!token.IsCancellationRequested)
-                                _scan = scan.StartScan(_streamInfo, scanFlag, token);
-                        }
-                        finally
-                        {
-                            Thread.CurrentThread.Priority = ThreadPriority.Normal;
-                        }
+                        Thread.CurrentThread.Priority = ThreadPriority.Lowest;
+                        if (!token.IsCancellationRequested)
+                            _scan = scan.StartScan(_streamInfo, scanFlag, token);
                     });
                 else
                     _scan = scan.StartScan(_streamInfo, scanFlag, token);
