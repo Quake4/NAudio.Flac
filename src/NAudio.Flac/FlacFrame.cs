@@ -9,8 +9,8 @@ namespace NAudio.Flac
     public sealed partial class FlacFrame
     {
         private FlacSubFrameData[] _data;
-        private Stream _stream;
-        private FlacMetadataStreamInfo _streamInfo;
+        private readonly Stream _stream;
+        private readonly FlacMetadataStreamInfo _streamInfo;
         private FlacBitReader _reader;
 
         private GCHandle _handle1, _handle2, _handle3;
@@ -48,7 +48,6 @@ namespace NAudio.Flac
 
 			long frameStartPosition = _stream.Position;
 			int read = _stream.Read(_buffer, 0, (int)Math.Min(_buffer.Length, _stream.Length - _stream.Position));
-			_stream.Position = frameStartPosition;
 
 			fixed (byte* ptrBuffer = _buffer)
 			using (_reader = new FlacBitReader(ptrBuffer, 0))
