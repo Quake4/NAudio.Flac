@@ -215,7 +215,7 @@ namespace NAudio.Flac
 
                     while (!frame.NextFrame())
                     {
-                        if (CanSeek) //go to next frame
+                        if (CanSeek && _scan != null) //go to next frame
                         {
                             if (++_frameIndex >= _scan.Frames.Length)
                                 return read;

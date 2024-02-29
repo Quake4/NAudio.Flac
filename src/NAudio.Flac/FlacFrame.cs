@@ -49,6 +49,12 @@ namespace NAudio.Flac
 			long frameStartPosition = _stream.Position;
 			int read = _stream.Read(_buffer, 0, (int)Math.Min(_buffer.Length, _stream.Length - _stream.Position));
 
+			if (read < _streamInfo.MinFrameSize)
+			{
+				HasError = true;
+				return;
+			}
+
 			fixed (byte* ptrBuffer = _buffer)
 			using (_reader = new FlacBitReader(ptrBuffer, 0))
 			{
