@@ -201,13 +201,12 @@ namespace NAudio.Flac
         public override int Read(byte[] buffer, int offset, int count)
         {
             int read = 0;
-            count -= (count % WaveFormat.BlockAlign);
 
             lock (_bufferLock)
             {
                 read += GetOverflows(buffer, ref offset, count);
 
-                while (read < count)
+                while (read < count && _position < Length)
                 {
                     FlacFrame frame = Frame;
                     if (frame == null)
@@ -234,10 +233,11 @@ namespace NAudio.Flac
                     read += bytesToCopy;
                     offset += bytesToCopy;
 
-                    _overflowCount = ((bufferlength > bytesToCopy) ? (bufferlength - bytesToCopy) : 0);
-                    _overflowOffset = ((bufferlength > bytesToCopy) ? (bytesToCopy) : 0);
+                    _overflowCount = (bufferlength > bytesToCopy) ? (bufferlength - bytesToCopy) : 0;
+                    _overflowOffset = (bufferlength > bytesToCopy) ? bytesToCopy : 0;
                 }
             }
+
             _position += read;
 
             return read;
