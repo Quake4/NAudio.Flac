@@ -276,7 +276,12 @@ namespace NAudio.Flac
                 {
                     value = Math.Max(0, value);
                     value += WaveFormat.BlockAlign - 1; // align to high
-                    value = Math.Min(value, Length);
+                    if (value >= Length)
+                    {
+                        _position = Length;
+                        _overflowCount = _overflowOffset = 0;
+                        return;
+                    }
 
                     var sample = value / WaveFormat.BlockAlign;
                     if (_scan != null) // by scan
@@ -291,8 +296,7 @@ namespace NAudio.Flac
                                 if (_stream.Position >= _stream.Length - 16)
                                     throw new EndOfStreamException("Stream got EOF.");
                                 _position = frame.SampleOffset * WaveFormat.BlockAlign;
-                                _overflowCount = 0;
-                                _overflowOffset = 0;
+                                _overflowCount = _overflowOffset = 0;
                                 break;
                             }
                         }
@@ -327,8 +331,7 @@ namespace NAudio.Flac
                                     _stream.Position = _dataStartPosition + (long)index.Offset;
                                     _position = (long)index.Number * WaveFormat.BlockAlign;
                                 }
-                                _overflowCount = 0;
-                                _overflowOffset = 0;
+                                _overflowCount = _overflowOffset = 0;
                                 break;
                             }
                             prevIndex = index;
