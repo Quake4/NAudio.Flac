@@ -31,6 +31,17 @@ namespace NAudio.Flac
             _stream = stream;
         }
 
+		public static string GetFilenameFromStream(Stream stream)
+		{
+			var filename = (stream as FileStream)?.Name;
+			if (filename == null)
+			{
+				var type = stream.GetType().GetProperty("Name", BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.Instance);
+				filename = (string)type.GetValue(stream);
+			}
+			return filename;
+		}
+
         public FlacPreScan StartScan(FlacMetadataStreamInfo streamInfo, FlacPreScanMethodMode method, CancellationToken token)
         {
             if (_isRunning)
@@ -44,13 +55,7 @@ namespace NAudio.Flac
             {
                 if (method == FlacPreScanMethodMode.Async)
                 {
-                    var filename = (_stream as FileStream)?.Name;
-                    if (filename == null)
-                    {
-                        var type = _stream.GetType().GetProperty("Name", BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.Instance);
-                        filename = (string)type.GetValue(_stream);
-                    }
-                    using (var stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, 0x1000, FileOptions.SequentialScan))
+                    using (var stream = new FileStream(GetFilenameFromStream(_stream), FileMode.Open, FileAccess.Read, FileShare.Read, 0x1000, FileOptions.SequentialScan))
                     {
                         stream.Position = _stream.Position;
                         ScanStream(streamInfo, stream, token);
