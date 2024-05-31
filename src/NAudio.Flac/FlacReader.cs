@@ -1,12 +1,12 @@
 ﻿//#define DIAGNOSTICS
 
+using NAudio.Wave;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using NAudio.Wave;
 
 namespace NAudio.Flac
 {
@@ -21,6 +21,7 @@ namespace NAudio.Flac
         private readonly FlacMetadataStreamInfo _streamInfo;
         private readonly FlacSeekPoint[] _seekPoints;
         private FlacPreScan _scan;
+        readonly string _fileName;
 
         private readonly object _bufferLock = new object();
         private CancellationTokenSource _token;
@@ -53,6 +54,8 @@ namespace NAudio.Flac
             get { return _waveFormat; }
         }
 
+        public string FileName => _fileName;
+
         /// <summary>
         ///     Gets a value which indicates whether the seeking is supported. True means that seeking is supported; False means
         ///     that seeking is not supported.
@@ -74,7 +77,7 @@ namespace NAudio.Flac
         /// </summary>
         /// <param name="fileName">Filename which of a flac file which should be decoded.</param>
         public FlacReader(string fileName)
-            : this(File.OpenRead(fileName))
+            : this(File.OpenRead(fileName), fileName)
         {
         }
 
@@ -82,8 +85,8 @@ namespace NAudio.Flac
         ///     Initializes a new instance of the <see cref="FlacReader" /> class.
         /// </summary>
         /// <param name="stream">Stream which contains flac data which should be decoded.</param>
-        public FlacReader(Stream stream)
-            : this(stream, FlacPreScanMethodMode.Default)
+        public FlacReader(Stream stream, string fileName)
+            : this(stream, fileName, FlacPreScanMethodMode.Default)
         {
         }
 
@@ -92,8 +95,8 @@ namespace NAudio.Flac
         /// </summary>
         /// <param name="stream">Stream which contains flac data which should be decoded.</param>
         /// <param name="scanFlag">Scan mode which defines how to scan the flac data for frames.</param>
-        public FlacReader(Stream stream, FlacPreScanMethodMode scanFlag)
-            : this(stream, scanFlag, null)
+        public FlacReader(Stream stream, string fileName, FlacPreScanMethodMode scanFlag)
+            : this(stream, fileName, scanFlag, null)
         {
         }
 
@@ -106,7 +109,7 @@ namespace NAudio.Flac
         ///     Callback which gets called when the pre scan processes finished. Should be used if the
         ///     <paramref name="scanFlag" /> argument is set the <see cref="FlacPreScanMethodMode.Async" />.
         /// </param>
-        public FlacReader(Stream stream, FlacPreScanMethodMode scanFlag,
+        public FlacReader(Stream stream, string fileName, FlacPreScanMethodMode scanFlag,
             Action<FlacPreScanFinishedEventArgs> onscanFinished)
         {
             if (stream == null)
@@ -115,6 +118,7 @@ namespace NAudio.Flac
                 throw new ArgumentException("Stream is not readable.", "stream");
 
             _stream = stream;
+            _fileName = fileName;
 
             //skip ID3v2
             Id3v2Tag.ReadTag(stream);
@@ -163,7 +167,7 @@ namespace NAudio.Flac
 
             if (scanFlag != FlacPreScanMethodMode.None)
             {
-                var scan = new FlacPreScan(_stream);
+                var scan = new FlacPreScan(_stream, _fileName);
                 scan.ScanFinished += (s, e) =>
                 {
                     if (onscanFinished != null)
@@ -315,7 +319,7 @@ namespace NAudio.Flac
                                 _stream.Position = _dataStartPosition + (long)index.Offset;
                                 if (_stream.Position >= _stream.Length - 16)
                                     throw new EndOfStreamException("Stream got EOF.");
-                                var scan = new FlacPreScan(_stream);
+                                var scan = new FlacPreScan(_stream, _fileName);
                                 _token = _token ?? new CancellationTokenSource();
                                 var frames = scan.ScanThisShit(_streamInfo, _stream, _token.Token, (int)(sample - (long)index.Number));
                                 if (frames.Length > 0)

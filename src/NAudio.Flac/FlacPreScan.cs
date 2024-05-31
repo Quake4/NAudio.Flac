@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -14,6 +13,7 @@ namespace NAudio.Flac
         private const int BufferSize = 0x20000;
         private readonly Stream _stream;
         private bool _isRunning;
+        readonly string _fileName;
 
         public event EventHandler<FlacPreScanFinishedEventArgs> ScanFinished;
 
@@ -23,24 +23,14 @@ namespace NAudio.Flac
 
         public long TotalSamples { get; private set; }
 
-        public FlacPreScan(Stream stream)
+        public FlacPreScan(Stream stream, string fileName)
         {
             if (stream == null) throw new ArgumentNullException("stream");
             if (!stream.CanRead) throw new ArgumentException("stream is not readable");
 
             _stream = stream;
+            _fileName = fileName;
         }
-
-		public static string GetFilenameFromStream(Stream stream)
-		{
-			var filename = (stream as FileStream)?.Name;
-			if (filename == null)
-			{
-				var type = stream.GetType().GetProperty("Name", BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.Instance);
-				filename = (string)type.GetValue(stream);
-			}
-			return filename;
-		}
 
         public FlacPreScan StartScan(FlacMetadataStreamInfo streamInfo, FlacPreScanMethodMode method, CancellationToken token)
         {
@@ -55,7 +45,7 @@ namespace NAudio.Flac
             {
                 if (method == FlacPreScanMethodMode.Async)
                 {
-                    using (var stream = new FileStream(GetFilenameFromStream(_stream), FileMode.Open, FileAccess.Read, FileShare.Read, 0x1000, FileOptions.SequentialScan))
+                    using (var stream = new FileStream(_fileName, FileMode.Open, FileAccess.Read, FileShare.Read, 0x1000, FileOptions.SequentialScan))
                     {
                         stream.Position = _stream.Position;
                         ScanStream(streamInfo, stream, token);
@@ -218,6 +208,7 @@ namespace NAudio.Flac
                             }
                         }
                     }
+                    Thread.Sleep(0);
                 }
 
                 stream.Position -= FlacConstant.FrameHeaderSize;
