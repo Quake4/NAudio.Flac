@@ -221,11 +221,11 @@ namespace NAudio.Flac
                         if (CanSeek && _scan != null) //go to next frame
                         {
                             if (++_frameIndex >= _scan.Frames.Length)
-                                return read;
+                                goto exit;
                             _stream.Position = _scan.Frames[_frameIndex].StreamOffset;
                         }
                         else if (_stream.Position == _stream.Length)
-                            return read;
+                            goto exit;
                         else
                             _stream.Position++;
                     }
@@ -241,6 +241,8 @@ namespace NAudio.Flac
                     _overflowOffset = (bufferlength > bytesToCopy) ? bytesToCopy : 0;
                 }
             }
+
+            exit:
 
             _position += read;
 
