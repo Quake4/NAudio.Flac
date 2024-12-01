@@ -1,10 +1,20 @@
-﻿using System;
+﻿/*
+
+Copyright © 2023 Oleg Samsonov aka Quake4. All rights reserved.
+https://github.com/Quake4/NAudio.Flac
+
+This Source Code Form is subject to the terms of the Mozilla
+Public License, v. 2.0. If a copy of the MPL was not distributed
+with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+*/
+using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 
 namespace NAudio.Flac
 {
-    public class FlacMetadataSeekTable : FlacMetadata
+    public sealed class FlacMetadataSeekTable : FlacMetadata
     {
         private readonly FlacSeekPoint[] seekPoints;
 

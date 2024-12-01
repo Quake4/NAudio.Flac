@@ -46,6 +46,10 @@ namespace NAudio.Flac
                     data = new FlacMetadataVorbisComment(stream, length, lastBlock);
                     break;
 
+				case FlacMetaDataType.Picture:
+					data = new FlacMetadataPicture(stream, length, lastBlock);
+					break;
+
                 default:
                     data = new FlacMetadata(type, lastBlock, length);
                     break;

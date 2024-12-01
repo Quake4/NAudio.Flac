@@ -39,7 +39,7 @@ namespace NAudio.Flac
         /// <summary>
         ///     Gets a list with all found metadata fields.
         /// </summary>
-        public List<FlacMetadata> Metadata { get; protected set; }
+        public FlacMetadata[] Metadata { get; protected set; }
 
         public WaveFormat SourceWaveFormat
         {
@@ -132,20 +132,18 @@ namespace NAudio.Flac
                 beginSync[2] == 0x61 && beginSync[3] == 0x43)
             {
                 //read metadata
-                List<FlacMetadata> metadata = FlacMetadata.ReadAllMetadataFromStream(stream);
+                var metadata = Metadata = FlacMetadata.ReadAllMetadataFromStream(stream)?.ToArray();
 
-                Metadata = metadata;
-                if (metadata == null || metadata.Count <= 0)
+                if (metadata == null || metadata.Length <= 0)
                     throw new FlacException("No Metadata found.", FlacLayer.Metadata);
 
                 var streamInfo =
-                    metadata.First(x => x.MetaDataType == FlacMetaDataType.StreamInfo) as FlacMetadataStreamInfo;
-                if (streamInfo == null)
-                    throw new FlacException("No StreamInfo-Metadata found.", FlacLayer.Metadata);
+                    metadata.FirstOrDefault(x => x.MetaDataType == FlacMetaDataType.StreamInfo) as FlacMetadataStreamInfo;
+
+                _streamInfo = streamInfo ?? throw new FlacException("No StreamInfo-Metadata found.", FlacLayer.Metadata);
 
                 _seekPoints = (metadata.FirstOrDefault(x => x.MetaDataType == FlacMetaDataType.Seektable) as FlacMetadataSeekTable)?.SeekPoints;
 
-                _streamInfo = streamInfo;
                 _sourceWaveFormat = new WaveFormat(streamInfo.SampleRate, streamInfo.BitsPerSample, streamInfo.Channels);
                 _waveFormat = new WaveFormat(streamInfo.SampleRate, (streamInfo.BitsPerSample + 7) / 8 * 8, streamInfo.Channels);
                 _dataStartPosition = stream.Position;

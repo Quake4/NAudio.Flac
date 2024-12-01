@@ -3,7 +3,7 @@ using System.IO;
 
 namespace NAudio.Flac
 {
-    public class FlacMetadataStreamInfo : FlacMetadata
+    public sealed class FlacMetadataStreamInfo : FlacMetadata
     {
         public unsafe FlacMetadataStreamInfo(Stream stream, Int32 length, bool lastBlock)
             : base(FlacMetaDataType.StreamInfo, lastBlock, length)
