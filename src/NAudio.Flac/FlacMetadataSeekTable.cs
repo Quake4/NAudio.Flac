@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace NAudio.Flac
 {
@@ -16,22 +17,21 @@ namespace NAudio.Flac
             try
             {
                 for (int i = 0; i < entryCount; i++)
-                {
-                    var bytes = reader.ReadBytes(8);
-                    Array.Reverse(bytes);
-                    var number = BitConverter.ToUInt64(bytes, 0);
-                    bytes = reader.ReadBytes(8);
-                    Array.Reverse(bytes);
-                    var offset = BitConverter.ToUInt64(bytes, 0);
-
-                    seekPoints[i] = new FlacSeekPoint(number, offset, reader.ReadUInt16());
-                }
+                    seekPoints[i] = new FlacSeekPoint(ReadUInt64R(reader), ReadUInt64R(reader), reader.ReadUInt16());
             }
             catch (IOException e)
             {
                 throw new FlacException(e, FlacLayer.Metadata);
             }
         }
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static ulong ReadUInt64R(BinaryReader reader)
+		{
+			var bytes = reader.ReadBytes(8);
+			Array.Reverse(bytes);
+			return BitConverter.ToUInt64(bytes, 0);
+		}
 
         public FlacSeekPoint[] SeekPoints => seekPoints;
 
