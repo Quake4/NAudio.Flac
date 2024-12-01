@@ -16,7 +16,7 @@ using System.Text;
 
 namespace NAudio.Flac
 {
-	public class FlacMetadataVorbisComment : FlacMetadata
+	public sealed class FlacMetadataVorbisComment : FlacMetadata
 	{
 		private readonly IDictionary<string, string> comments;
 		private readonly string vendor;

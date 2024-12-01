@@ -278,7 +278,7 @@ namespace NAudio.Flac
 
                 if (DoCRC)
                 {
-                    var crc8 = NAudio.Flac.CRC8.Instance.CalcCheckSum(reader.Buffer, reader.Position);
+                    var crc8 = Flac.CRC8.Instance.CalcCheckSum(reader.Buffer, reader.Position);
                     CRC8 = (byte)reader.ReadBits(8);
                     if (CRC8 != crc8)
                     {
