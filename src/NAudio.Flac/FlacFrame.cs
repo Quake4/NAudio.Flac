@@ -59,7 +59,8 @@ namespace NAudio.Flac
 			int read = _stream.Read(_buffer, _bufferBytes, (int)Math.Min(_buffer.Length - _bufferBytes, _stream.Length - _stream.Position));
 			_bufferBytes += read;
 			_prevStreamPosition = _stream.Position;
-			if (read < _streamInfo.MinFrameSize)
+
+			if (_bufferBytes < _streamInfo.MinFrameSize)
 			{
 				HasError = true;
 				return;
