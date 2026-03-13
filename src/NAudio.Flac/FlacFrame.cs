@@ -19,6 +19,8 @@ namespace NAudio.Flac
         private bool _isLong;
         private int[] _residualBuffer;
         private byte[] _buffer;
+		private int _bufferBytes;
+		private long _prevStreamPosition;
 
         public FlacFrameHeader Header { get; private set; }
 
@@ -44,11 +46,19 @@ namespace NAudio.Flac
 		private unsafe void Decode()
 		{
 			if (_buffer == null || _buffer.Length < _streamInfo.MaxFrameSize)
+			{
 				_buffer = new byte[_streamInfo.MaxFrameSize];
+				_bufferBytes = 0;
+				_prevStreamPosition = _stream.Position;
+			}
 
-			long frameStartPosition = _stream.Position;
-			int read = _stream.Read(_buffer, 0, (int)Math.Min(_buffer.Length, _stream.Length - _stream.Position));
+			if (_prevStreamPosition != _stream.Position)
+				_bufferBytes = 0;
 
+			long frameStartPosition = _stream.Position - _bufferBytes;
+			int read = _stream.Read(_buffer, _bufferBytes, (int)Math.Min(_buffer.Length - _bufferBytes, _stream.Length - _stream.Position));
+			_bufferBytes += read;
+			_prevStreamPosition = _stream.Position;
 			if (read < _streamInfo.MinFrameSize)
 			{
 				HasError = true;
@@ -70,6 +80,8 @@ namespace NAudio.Flac
 						{
 							HasError = true;
 							_stream.Position = frameStartPosition;
+							_bufferBytes = 0;
+							_prevStreamPosition = -1;
 							return;
 						}
 
@@ -79,10 +91,15 @@ namespace NAudio.Flac
 							Debug.WriteLine($"Wrong frame CRC16: {crc} {Crc16}");
 							HasError = true;
 							_stream.Position = frameStartPosition;
+							_bufferBytes = 0;
+							_prevStreamPosition = -1;
 							return;
 						}
 
-						_stream.Position = (frameStartPosition + _reader.Position) >= _stream.Length ? _stream.Length : (frameStartPosition + _reader.Position);
+						//_stream.Position = (frameStartPosition + _reader.Position) >= _stream.Length ? _stream.Length : (frameStartPosition + _reader.Position);
+						// move rest of buffer to start
+						_bufferBytes -= _reader.Position;
+						Buffer.BlockCopy(_buffer, _reader.Position, _buffer, 0, _bufferBytes);
 
 						SamplesToBytes(_data);
 					}
@@ -90,6 +107,8 @@ namespace NAudio.Flac
 				catch
 				{
 					_stream.Position = frameStartPosition;
+					_bufferBytes = 0;
+					_prevStreamPosition = -1;
 					//HasError = true;
 					throw;
 				}
