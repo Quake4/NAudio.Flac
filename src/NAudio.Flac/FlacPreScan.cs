@@ -120,9 +120,6 @@ namespace NAudio.Flac
 
         public unsafe FlacFrameInformation[] ScanThisShit(FlacMetadataStreamInfo streamInfo, Stream stream, CancellationToken token, int? tillSampleOffset = null)
         {
-            //if (!(stream is BufferedStream))
-            //    stream = new BufferedStream(stream);
-
             byte[] buffer = new byte[BufferSize];
             int read = 0;
 
@@ -136,13 +133,17 @@ namespace NAudio.Flac
             FlacFrameInformation frameInfo = new FlacFrameInformation();
             FlacFrameHeader baseHeader = null;
 
+			int offset = 0;
+
             while (!token.IsCancellationRequested)
             {
-                read = stream.Read(buffer, 0, buffer.Length);
+                read = stream.Read(buffer, offset, buffer.Length - offset) + offset;
 
                 var readminusheader = read - FlacConstant.FrameHeaderSize;
                 if (readminusheader <= 0)
                     break;
+
+                offset = FlacConstant.FrameHeaderSize;
 
                 fixed (byte* bufferPtr = buffer)
                 {
@@ -211,7 +212,7 @@ namespace NAudio.Flac
                     Thread.Sleep(0);
                 }
 
-                stream.Position -= FlacConstant.FrameHeaderSize;
+                Buffer.BlockCopy(buffer, buffer.Length - offset, buffer, 0, offset);
             }
 
             return frames.ToArray();
